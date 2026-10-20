@@ -1,0 +1,69 @@
+{
+  "DisplayName": "Main",
+  "Tooltip": null,
+  "HelpLink": null,
+  "Color": null,
+  "OriginalIconFileName": null,
+  "Arguments": [
+    {
+      "Name": "in_ExecutionMode",
+      "DisplayName": "in_ExecutionMode",
+      "Category": null,
+      "Tooltip": null,
+      "Placeholder": null,
+      "Widget": null,
+      "IsRequired": false,
+      "IsPrincipal": true,
+      "ArgumentType": 0,
+      "DataSourceItems": null
+    },
+    {
+      "Name": "in_ConfigFilePath",
+      "DisplayName": "in_ConfigFilePath",
+      "Category": null,
+      "Tooltip": null,
+      "Placeholder": null,
+      "Widget": null,
+      "IsRequired": false,
+      "IsPrincipal": true,
+      "ArgumentType": 0,
+      "DataSourceItems": null
+    },
+    {
+      "Name": "in_SessionId",
+      "DisplayName": "in_SessionId",
+      "Category": null,
+      "Tooltip": null,
+      "Placeholder": null,
+      "Widget": null,
+      "IsRequired": false,
+      "IsPrincipal": true,
+      "ArgumentType": 0,
+      "DataSourceItems": null
+    },
+    {
+      "Name": "in_ExamId",
+      "DisplayName": "in_ExamId",
+      "Category": null,
+      "Tooltip": null,
+      "Placeholder": null,
+      "Widget": null,
+      "IsRequired": false,
+      "IsPrincipal": true,
+      "ArgumentType": 0,
+      "DataSourceItems": null
+    },
+    {
+      "Name": "out_ExecutionStatus",
+      "DisplayName": "out_ExecutionStatus",
+      "Category": null,
+      "Tooltip": null,
+      "Placeholder": null,
+      "Widget": null,
+      "IsRequired": false,
+      "IsPrincipal": true,
+      "ArgumentType": 0,
+      "DataSourceItems": null
+    }
+  ]
+}

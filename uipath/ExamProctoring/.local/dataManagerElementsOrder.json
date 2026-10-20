@@ -1,0 +1,28 @@
+{
+  "Workflows": [
+    {
+      "Path": "Main.xaml",
+      "SortBy": 0,
+      "VariablesSectionElementsOrder": null,
+      "ArgumentsSectionElementsOrder": null,
+      "ConstantsSectionElementsOrder": null,
+      "AddedNamespaces": null
+    },
+    {
+      "Path": "Workflows/ExamLifecycle.xaml",
+      "SortBy": 0,
+      "VariablesSectionElementsOrder": [],
+      "ArgumentsSectionElementsOrder": null,
+      "ConstantsSectionElementsOrder": null,
+      "AddedNamespaces": null
+    },
+    {
+      "Path": "Workflows/LoadConfiguration.xaml",
+      "SortBy": 0,
+      "VariablesSectionElementsOrder": [],
+      "ArgumentsSectionElementsOrder": null,
+      "ConstantsSectionElementsOrder": null,
+      "AddedNamespaces": null
+    }
+  ]
+}

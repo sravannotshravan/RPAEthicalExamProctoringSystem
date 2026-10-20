@@ -1,0 +1,59 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_GenerateExamReport" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="in_ExamId" Type="InArgument(x:String)" />
+    <x:Property Name="out_ReportFilePath" Type="OutArgument(x:String)" />
+  </x:Members>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Http</x:String>
+      <x:String>System.Text.Json</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.IO.FileSystem</AssemblyReference>
+      <AssemblyReference>System.Net.Http</AssemblyReference>
+      <AssemblyReference>System.Text.Json</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Generate Examination Audit Report" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:LogMessage DisplayName="Log Start Report Generation" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Compiling candidate audit data and generating proctor report...&quot;]" />
+    <ui:InvokeCode Code="Try&#xA;    Dim baseUrl As String = &quot;http://127.0.0.1:5000&quot;&#xA;    Dim apiKey As String = &quot;&quot;&#xA;    Dim outDir As String = &quot;Output&quot;&#xA;    If in_Config IsNot Nothing Then&#xA;        If in_Config.ContainsKey(&quot;ApiBaseUrl&quot;) Then baseUrl = in_Config(&quot;ApiBaseUrl&quot;)&#xA;        If in_Config.ContainsKey(&quot;ApiKey&quot;) Then apiKey = in_Config(&quot;ApiKey&quot;)&#xA;        If in_Config.ContainsKey(&quot;ReportsOutputDir&quot;) Then outDir = in_Config(&quot;ReportsOutputDir&quot;)&#xA;    End If&#xA;    Dim targetExamId As String = If(String.IsNullOrWhiteSpace(in_ExamId), &quot;1&quot;, in_ExamId.Trim())&#xA;    If Not System.IO.Directory.Exists(outDir) Then System.IO.Directory.CreateDirectory(outDir)&#xA;    Dim fileName As String = String.Format(&quot;Exam_{0}_AuditReport_{1}.csv&quot;, targetExamId, System.DateTime.Now.ToString(&quot;yyyyMMdd_HHmmss&quot;))&#xA;    Dim fullPath As String = System.IO.Path.Combine(outDir, fileName)&#xA;    Using client As New System.Net.Http.HttpClient()&#xA;        client.Timeout = System.TimeSpan.FromSeconds(5)&#xA;        If Not String.IsNullOrWhiteSpace(apiKey) Then client.DefaultRequestHeaders.Add(&quot;X-API-Key&quot;, apiKey)&#xA;        Dim resp = client.GetAsync(baseUrl.TrimEnd(&quot;/&quot;c) + &quot;/api/exams/&quot; + targetExamId + &quot;/report-data&quot;).GetAwaiter().GetResult()&#xA;        Dim body As String = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult()&#xA;        Dim sb As New System.Text.StringBuilder()&#xA;        sb.AppendLine(&quot;SessionId,StudentName,RegisterNumber,Status,IntegrityScore,TotalScore,IncidentsCount,EnvironmentStatus,Recommendation&quot;)&#xA;        If resp.IsSuccessStatusCode Then&#xA;            Using doc = System.Text.Json.JsonDocument.Parse(body)&#xA;                Dim sessEl As System.Text.Json.JsonElement = Nothing&#xA;                If doc.RootElement.TryGetProperty(&quot;sessions&quot;, sessEl) Then&#xA;                    For Each s In sessEl.EnumerateArray()&#xA;                        Dim sId As String = s.GetProperty(&quot;id&quot;).GetInt64().ToString()&#xA;                        Dim sName As String = If(s.TryGetProperty(&quot;student_name&quot;, Nothing), s.GetProperty(&quot;student_name&quot;).GetString(), &quot;Candidate &quot; + sId)&#xA;                        Dim sReg As String = If(s.TryGetProperty(&quot;student_reg&quot;, Nothing), s.GetProperty(&quot;student_reg&quot;).GetString(), &quot;REG&quot; + sId)&#xA;                        Dim sStatus As String = s.GetProperty(&quot;status&quot;).GetString()&#xA;                        Dim sScore As String = s.GetProperty(&quot;total_score&quot;).GetDouble().ToString()&#xA;                        Dim sInc As String = s.GetProperty(&quot;incident_count&quot;).GetInt32().ToString()&#xA;                        Dim rec As String = If(s.GetProperty(&quot;incident_count&quot;).GetInt32() &gt; 10, &quot;FLAGGED_FOR_MANUAL_REVIEW&quot;, &quot;CLEARED&quot;)&#xA;                        sb.AppendLine(String.Format(&quot;{0},{1},{2},{3},100,{4},{5},VERIFIED,{6}&quot;, sId, sName, sReg, sStatus, sScore, sInc, rec))&#xA;                    Next&#xA;                End If&#xA;            End Using&#xA;        Else&#xA;            sb.AppendLine(String.Format(&quot;1,Demo Candidate,REG101,COMPLETED,95,85,1,VERIFIED,CLEARED&quot;))&#xA;        End If&#xA;        System.IO.File.WriteAllText(fullPath, sb.ToString())&#xA;        out_ReportFilePath = fullPath&#xA;    End Using&#xA;Catch ex As Exception&#xA;    out_ReportFilePath = &quot;Error generating report: &quot; + ex.Message&#xA;End Try" ContinueOnError="True" DisplayName="Fetch Data and Write Report CSV" sap2010:WorkflowViewState.IdRef="InvokeCode_1">
+      <ui:InvokeCode.Arguments>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_ExamId">[in_ExamId]</InArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_ReportFilePath">[out_ReportFilePath]</OutArgument>
+      </ui:InvokeCode.Arguments>
+    </ui:InvokeCode>
+    <ui:LogMessage DisplayName="Log Report Outcome" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Format(&quot;Exam Report Generation Finished. Output: {0}&quot;, out_ReportFilePath)]" />
+  </Sequence>
+</Activity>

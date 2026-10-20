@@ -1,0 +1,8 @@
+.uipath/.skills/
+# AI Agent and Skill directories
+.claude/
+.codex/
+.gemini/
+.agents/
+.agent/
+skills-lock.json

@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ exam.title }} - Examination Workspace{% endblock %}
+
+{% block content %}
+<!-- Top Examination Status Bar -->
+<div class="bg-white border-bottom shadow-sm sticky-top py-2 px-3 mb-3">
+    <div class="container-fluid d-flex flex-wrap justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <span class="badge bg-primary me-2 px-2 py-1">Session #{{ session.id }}</span>
+            <h6 class="mb-0 fw-bold me-3">{{ exam.title }}</h6>
+            <span class="text-muted small border-start ps-3 d-none d-md-inline">
+                <i class="bi bi-person me-1"></i> {{ session.student.name }} ({{ session.student.register_number }})
+            </span>
+            <span class="badge bg-success-subtle text-success border ms-2 d-none d-lg-inline">
+                <i class="bi bi-robot me-1"></i> RPA Verified
+            </span>
+        </div>
+
+        <div class="d-flex align-items-center gap-3 mt-2 mt-sm-0">
+            <!-- Live Countdown Timer -->
+            <div class="d-flex align-items-center bg-light border px-3 py-1 rounded">
+                <i class="bi bi-stopwatch text-danger me-2 fs-5"></i>
+                <span class="small text-muted me-2">Time Remaining:</span>
+                <span id="countdownTimer" class="exam-timer text-danger fs-6" data-duration="{{ exam.duration_minutes }}">
+                    {{ exam.duration_minutes }}:00
+                </span>
+            </div>
+
+            <!-- Finish Exam Button -->
+            <button type="button" class="btn btn-outline-danger btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#finishModal">
+                <i class="bi bi-check2-circle me-1"></i> Finish Exam
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid px-3 px-lg-4">
+    <div class="row g-3">
+        <!-- Left Sidebar: Questions & Monitoring -->
+        <div class="col-lg-5 col-xl-4">
+            <!-- Questions Nav Pills -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold small text-uppercase text-secondary">
+                        <i class="bi bi-list-task me-1"></i> Exam Questions ({{ questions|length }})
+                    </span>
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis" id="submittedCountBadge">
+                        {{ submissions|length }} / {{ questions|length }} Submitted
+                    </span>
+                </div>
+                <div class="card-body p-2">
+                    <div class="nav nav-pills flex-column gap-1" id="questionPills" role="tablist">
+                        {% for q in questions %}
+                        <button class="nav-link text-start d-flex justify-content-between align-items-center py-2 px-3 {% if loop.first %}active{% endif %}"
+                                id="tab-q-{{ q.id }}"
+                                data-bs-toggle="pill"
+                                data-bs-target="#content-q-{{ q.id }}"
+                                type="button"
+                                role="tab"
+                                onclick="selectQuestion({{ q.id }})">
+                            <div class="text-truncate me-2">
+                                <span class="fw-semibold">Q{{ loop.index }}.</span> {{ q.title }}
+                            </div>
+                            <span class="badge {% if q.id in submissions %}bg-success{% else %}bg-secondary-subtle text-secondary{% endif %} rounded-pill" id="badge-q-{{ q.id }}">
+                                {% if q.id in submissions %}Submitted{% else %}Pending{% endif %}
+                            </span>
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Description Panel -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="tab-content" id="questionTabsContent">
+                        {% for q in questions %}
+                        <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="content-q-{{ q.id }}" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="fw-bold text-primary mb-1">Q{{ loop.index }}: {{ q.title }}</h6>
+                                <span class="badge bg-dark-subtle text-dark border">{{ q.language }}</span>
+                            </div>
+                            <div class="text-secondary small mb-3" style="white-space: pre-wrap;">{{ q.description }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Webcam & CV Monitoring Widget -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white py-2 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold small">
+                        <i class="bi bi-camera-video me-1"></i> Multimodal Proctoring Monitor
+                    </span>
+                    <div class="d-flex gap-1">
+                        <span class="badge bg-success" id="cameraStatusPill">Camera: ACTIVE</span>
+                        <span class="badge bg-success" id="micStatusPill">Mic: ACTIVE</span>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <!-- Video Container -->
+                    <div class="camera-container mb-2">
+                        <video id="webcamVideo" autoplay playsinline muted></video>
+                        <canvas id="analysisCanvas" style="display: none;"></canvas>
+                        <div class="camera-overlay">
+                            <span class="camera-status-pill" id="overlayFaceCount">Faces: 1</span>
+                            <span class="camera-status-pill bg-success" id="overlayStatus">NORMAL</span>
+                        </div>
+                    </div>
+
+                    <!-- Monitoring Telemetry Details -->
+                    <div class="p-2 bg-light rounded border small mb-2">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Edge Face Counter:</span>
+                            <span class="fw-bold" id="cvFaceCount">1 detected</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted"><i class="bi bi-eye me-1"></i>Gaze Tracking:</span>
+                            <span class="fw-bold text-success" id="gazeStatusText">Centered on Screen</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted"><i class="bi bi-phone me-1"></i>Prohibited Device:</span>
+                            <span class="fw-bold text-success" id="deviceStatusText">None Detected</span>
+                        </div>
+                        <!-- Live Microphone Level -->
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted"><i class="bi bi-mic me-1"></i>Mic Acoustic Energy:</span>
+                            <div class="progress flex-grow-1 mx-2" style="height: 6px;">
+                                <div id="micVolumeBar" class="progress-bar bg-success" role="progressbar" style="width: 5%;"></div>
+                            </div>
+                            <span class="fw-bold small" id="micVolumeText">Quiet (Normal)</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Proctoring Status:</span>
+                            <span class="fw-bold text-success" id="cvStatusText">NORMAL</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">RPA Environment Agent:</span>
+                            <span class="fw-bold text-success"><i class="bi bi-shield-check me-1"></i>Verified</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Last Verification:</span>
+                            <span class="text-secondary" id="cvLastPing">Just now</span>
+                        </div>
+                    </div>
+
+                    <!-- Testing / Demonstration Simulation Controls -->
+                    <div class="accordion" id="simulationAccordion">
+                        <div class="accordion-item border-0">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed py-1 px-2 small bg-secondary-subtle text-dark rounded" type="button" data-bs-toggle="collapse" data-bs-target="#simControls">
+                                    <i class="bi bi-sliders me-1"></i> POC Simulation Tools (Test Anomalies)
+                                </button>
+                            </h2>
+                            <div id="simControls" class="accordion-collapse collapse" data-bs-parent="#simulationAccordion">
+                                <div class="accordion-body p-2 border rounded mt-1 bg-white">
+                                    <div class="small text-muted mb-2">Simulate visual, audio, device & application infractions:</div>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        <!-- Audio Anomaly Simulations -->
+                                        <button class="btn btn-outline-danger btn-sm flex-fill" onclick="simulateAudioAnomaly('speech')">
+                                            <i class="bi bi-mic-fill me-1"></i> Speech (High)
+                                        </button>
+                                        <button class="btn btn-outline-warning btn-sm flex-fill" onclick="simulateAudioAnomaly('noise')">
+                                            <i class="bi bi-volume-up me-1"></i> Audio Spike (Med)
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm flex-fill" onclick="simulateAudioAnomaly('multiple_voices')">
+                                            <i class="bi bi-people-fill me-1"></i> Multi-Voice (High)
+                                        </button>
+                                        <!-- Visual & Device Simulations -->
+                                        <button class="btn btn-outline-primary btn-sm flex-fill" onclick="simulateAnomaly('gaze_shift')">
+                                            <i class="bi bi-eye-slash me-1"></i> Gaze Shift (Low)
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm flex-fill" onclick="simulateAnomaly('phone_detected')">
+                                            <i class="bi bi-phone me-1"></i> Phone in Frame (High)
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm flex-fill" onclick="simulateAnomaly('prohibited_device')">
+                                            <i class="bi bi-smartwatch me-1"></i> Device (High)
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm flex-fill" onclick="simulateAnomaly('three_faces')">
+                                            <i class="bi bi-people-fill me-1"></i> 3+ Faces (High)
+                                        </button>
+                                        <button class="btn btn-outline-warning btn-sm flex-fill" onclick="simulateAnomaly('multiple_faces')">
+                                            <i class="bi bi-people me-1"></i> 2 Faces (Med)
+                                        </button>
+                                        <button class="btn btn-outline-warning btn-sm flex-fill" onclick="simulateAnomaly('no_face')">
+                                            <i class="bi bi-person-x me-1"></i> No Face (Low)
+                                        </button>
+                                        <!-- Application Simulations -->
+                                        <button class="btn btn-outline-danger btn-sm flex-fill" onclick="simulateAnomaly('unauthorized_application')">
+                                            <i class="bi bi-window-x me-1"></i> Unauthorized App (High)
+                                        </button>
+                                        <button class="btn btn-outline-success btn-sm flex-fill" onclick="simulateAnomaly('normal')">
+                                            <i class="bi bi-person-check me-1"></i> Reset Normal
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ethical Reminder -->
+                    <div class="text-muted small mt-2 text-center" style="font-size: 0.75rem;">
+                        <i class="bi bi-shield-check text-primary me-1"></i> Continuous frames are discarded immediately after face counting.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Workspace: Coding Interface -->
+        <div class="col-lg-7 col-xl-8">
+            <div class="card shadow-sm border-0 h-100 d-flex flex-column">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-code-square text-primary me-2 fs-5"></i>
+                        <span class="fw-bold" id="currentQuestionTitle">Question 1</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="resetStarterCode()">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Code
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-body p-3 d-flex flex-column flex-grow-1">
+                    <!-- Code Editor Textarea -->
+                    <div class="mb-3 flex-grow-1 d-flex flex-column">
+                        <label for="codeEditor" class="form-label small fw-semibold text-muted d-flex justify-content-between">
+                            <span>Solution Editor (<span id="editorLanguage">python</span>)</span>
+                            <span class="text-muted small">Tab key supported</span>
+                        </label>
+                        <textarea class="form-control code-editor flex-grow-1" id="codeEditor" rows="16" spellcheck="false"></textarea>
+                    </div>
+
+                    <!-- Action Bar -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border" id="mockNoticeBadge">
+                                <i class="bi bi-info-circle me-1"></i> Mock Execution Sandbox
+                            </span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-primary fw-semibold" id="btnRunCode" onclick="runCurrentCode()">
+                                <i class="bi bi-play-fill me-1"></i> Run Test Cases
+                            </button>
+                            <button type="button" class="btn btn-success fw-semibold" id="btnSubmitCode" onclick="submitCurrentCode()">
+                                <i class="bi bi-cloud-upload-fill me-1"></i> Submit Solution
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Output Console -->
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small fw-semibold text-secondary">
+                                <i class="bi bi-terminal me-1"></i> Output & Test Results:
+                            </span>
+                            <span class="badge bg-light text-dark border small" id="outputStatusBadge">Ready</span>
+                        </div>
+                        <pre class="code-output mb-0" id="consoleOutput">Execution console ready. Click "Run Test Cases" to evaluate your solution.</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirm Finish Exam -->
+<div class="modal fade" id="finishModal" tabindex="-1" aria-labelledby="finishModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="finishModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> Finish Examination?
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to conclude your examination session?</p>
+                <div class="alert alert-secondary small mb-0">
+                    <div class="fw-bold mb-1">Session Summary:</div>
+                    <div>Candidate: <strong>{{ session.student.name }}</strong></div>
+                    <div>Exam: <strong>{{ exam.title }}</strong></div>
+                    <div class="mt-2 text-danger fw-semibold">
+                        <i class="bi bi-info-circle me-1"></i> Once finalized, your exam session will be closed and submitted for faculty evaluation.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel & Continue Test</button>
+                <form action="{{ url_for('student.finish_exam', session_id=session.id) }}" method="POST">
+                    <button type="submit" class="btn btn-danger fw-bold">
+                        <i class="bi bi-check-circle me-1"></i> Confirm & Finish
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Embed initial Question and Submission data as JSON -->
+<script>
+    const SESSION_ID = {{ session.id }};
+    const EXAM_DURATION_MINUTES = {{ exam.duration_minutes }};
+    const QUESTIONS_DATA = {
+        {% for q in questions %}
+        {{ q.id }}: {
+            id: {{ q.id }},
+            title: {{ q.title|tojson }},
+            description: {{ q.description|tojson }},
+            starter_code: {{ q.starter_code|tojson }},
+            language: {{ q.language|tojson }}
+        },
+        {% endfor %}
+    };
+
+    const SUBMISSIONS_DATA = {
+        {% for sub in session.submissions %}
+        {{ sub.question_id }}: {
+            code: {{ sub.code|tojson }},
+            output: {{ sub.output|tojson }},
+            score: {{ sub.score }}
+        },
+        {% endfor %}
+    };
+</script>
+<script src="{{ url_for('static', filename='js/exam.js') }}"></script>
+{% endblock %}

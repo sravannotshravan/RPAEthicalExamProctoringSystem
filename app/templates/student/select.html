@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Select Student & Exam{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-person-badge me-2"></i> Student Examination Portal
+                    </h5>
+                    <p class="mb-0 small opacity-75">POC Environment &bull; Select candidate identity & scheduled test</p>
+                </div>
+                <div class="card-body p-4">
+                    {% if not students or not exams %}
+                    <div class="alert alert-warning d-flex align-items-center" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                        <div>
+                            <strong>No exam data found!</strong>
+                            <p class="mb-1 small">Please seed the database with demo students and questions first, or create them in the Faculty Portal.</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <form action="{{ url_for('student.consent') }}" method="POST">
+                        <div class="mb-3">
+                            <label for="studentSelect" class="form-label fw-semibold">
+                                <i class="bi bi-person me-1"></i> Select Student:
+                            </label>
+                            <select class="form-select form-select-lg" id="studentSelect" name="student_id" required>
+                                <option value="" disabled selected>-- Select Candidate Identity --</option>
+                                {% for s in students %}
+                                <option value="{{ s.id }}">{{ s.name }} (Reg: {{ s.register_number }}) - {{ s.email }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">In this POC, candidate selection replaces identity login.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="examSelect" class="form-label fw-semibold">
+                                <i class="bi bi-journal-code me-1"></i> Select Available Exam:
+                            </label>
+                            <select class="form-select form-select-lg" id="examSelect" name="exam_id" required>
+                                <option value="" disabled selected>-- Select Examination --</option>
+                                {% for e in exams %}
+                                <option value="{{ e.id }}" data-duration="{{ e.duration_minutes }}" data-questions="{{ e.questions|length }}">
+                                    {{ e.title }} ({{ e.duration_minutes }} mins, {{ e.questions|length }} questions)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg fw-semibold" {% if not students or not exams %}disabled{% endif %}>
+                                Continue to Privacy Notice & Instructions <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer bg-light text-center py-3">
+                    <small class="text-muted">
+                        Need to manage exams or register candidates?
+                        <a href="{{ url_for('faculty.dashboard') }}" class="text-decoration-none fw-semibold">Go to Faculty Dashboard</a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

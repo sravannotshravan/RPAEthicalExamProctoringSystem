@@ -1,0 +1,59 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_ProctorAdministration" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="in_CsvPath" Type="InArgument(x:String)" />
+    <x:Property Name="out_ImportedCount" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_Status" Type="OutArgument(x:String)" />
+  </x:Members>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Http</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.IO.FileSystem</AssemblyReference>
+      <AssemblyReference>System.Net.Http</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Proctor Administration - Student Roster" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:LogMessage DisplayName="Log Start Proctor Admin" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Starting RPA Student Roster onboarding...&quot;]" />
+    <ui:InvokeCode Code="Try&#xA;    out_Count = 0&#xA;    Dim baseUrl As String = &quot;http://127.0.0.1:5000&quot;&#xA;    Dim apiKey As String = &quot;&quot;&#xA;    Dim csvPath As String = &quot;Data\sample_students.csv&quot;&#xA;    If in_Config IsNot Nothing Then&#xA;        If in_Config.ContainsKey(&quot;ApiBaseUrl&quot;) Then baseUrl = in_Config(&quot;ApiBaseUrl&quot;)&#xA;        If in_Config.ContainsKey(&quot;ApiKey&quot;) Then apiKey = in_Config(&quot;ApiKey&quot;)&#xA;        If in_Config.ContainsKey(&quot;ImportFilePath&quot;) Then csvPath = in_Config(&quot;ImportFilePath&quot;)&#xA;    End If&#xA;    If Not String.IsNullOrWhiteSpace(in_Path) Then csvPath = in_Path.Trim()&#xA;    If Not System.IO.File.Exists(csvPath) Then&#xA;        out_Status = &quot;Student CSV file not found: &quot; + csvPath&#xA;        Exit Sub&#xA;    End If&#xA;    Dim lines As String() = System.IO.File.ReadAllLines(csvPath)&#xA;    Dim jsonItems As New System.Collections.Generic.List(Of String)()&#xA;    For i As Integer = 1 To lines.Length - 1&#xA;        Dim line As String = lines(i).Trim()&#xA;        If Not String.IsNullOrWhiteSpace(line) Then&#xA;            Dim cols As String() = line.Split(&quot;,&quot;c)&#xA;            If cols.Length &gt;= 3 Then&#xA;                Dim name As String = cols(0).Trim()&#xA;                Dim email As String = cols(1).Trim()&#xA;                Dim reg As String = cols(2).Trim()&#xA;                jsonItems.Add(String.Format(&quot;{{&quot;&quot;name&quot;&quot;:&quot;&quot;{0}&quot;&quot;,&quot;&quot;email&quot;&quot;:&quot;&quot;{1}&quot;&quot;,&quot;&quot;register_number&quot;&quot;:&quot;&quot;{2}&quot;&quot;}}&quot;, name, email, reg))&#xA;            End If&#xA;        End If&#xA;    Next&#xA;    Dim payload As String = &quot;{&quot;&quot;students&quot;&quot;:[&quot; + String.Join(&quot;,&quot;, jsonItems) + &quot;]}&quot;&#xA;    Using client As New System.Net.Http.HttpClient()&#xA;        client.Timeout = System.TimeSpan.FromSeconds(10)&#xA;        If Not String.IsNullOrWhiteSpace(apiKey) Then client.DefaultRequestHeaders.Add(&quot;X-API-Key&quot;, apiKey)&#xA;        Dim content As New System.Net.Http.StringContent(payload, System.Text.Encoding.UTF8, &quot;application/json&quot;)&#xA;        Dim resp = client.PostAsync(baseUrl.TrimEnd(&quot;/&quot;c) + &quot;/api/students/import&quot;, content).GetAwaiter().GetResult()&#xA;        Dim body As String = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult()&#xA;        If resp.IsSuccessStatusCode Then&#xA;            out_Count = jsonItems.Count&#xA;            out_Status = String.Format(&quot;Roster imported successfully ({0} records processed): {1}&quot;, out_Count, body)&#xA;        Else&#xA;            out_Status = String.Format(&quot;Import API error ({0}): {1}&quot;, CInt(resp.StatusCode), body)&#xA;        End If&#xA;    End Using&#xA;Catch ex As Exception&#xA;    out_Count = 0&#xA;    out_Status = &quot;Proctor administration import error: &quot; + ex.Message&#xA;End Try" ContinueOnError="True" DisplayName="Process CSV and Import Students" sap2010:WorkflowViewState.IdRef="InvokeCode_1">
+      <ui:InvokeCode.Arguments>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Path">[in_CsvPath]</InArgument>
+        <OutArgument x:TypeArguments="x:Int32" x:Key="out_Count">[out_ImportedCount]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_Status">[out_Status]</OutArgument>
+      </ui:InvokeCode.Arguments>
+    </ui:InvokeCode>
+    <ui:LogMessage DisplayName="Log Proctor Admin Result" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[out_Status]" />
+  </Sequence>
+</Activity>

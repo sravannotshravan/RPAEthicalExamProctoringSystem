@@ -1,0 +1,7 @@
+[2026-10-20 10:47:41] Mode=FULL_DEMO | Status=COMPLETED_WITH_WARNINGS | Details=Full Demo Completed. Roster: 0 processed | Incidents: 0 | Report: Error generating report: No connection could be made because the target machine actively refused it. (127.0.0.1:5000)
+[2026-10-20 10:49:28] Mode=FULL_DEMO | Status=COMPLETED_WITH_WARNINGS | Details=Full Demo Completed. Roster: 5 processed | Incidents: 64 | Report: Output\Exam_1_AuditReport_20261020_104928.csv
+[2026-10-20 10:49:56] Mode=FULL_DEMO | Status=SUCCESS | Details=Full Demo Completed. Roster: 5 processed | Incidents: 64 | Report: Output\Exam_1_AuditReport_20261020_104956.csv
+[2026-10-20 10:51:52] Mode=FULL_DEMO | Status=SUCCESS | Details=Full Demo Completed. Roster: 5 processed | Incidents: 64 | Report: Output\Exam_1_AuditReport_20261020_105152.csv
+[2026-10-20 10:52:57] Mode=FULL_DEMO | Status=SUCCESS | Details=Full Demo Completed. Roster: 5 processed | Incidents: 64 | Report: Output\Exam_1_AuditReport_20261020_105257.csv
+[2026-10-20 10:54:24] Mode=FULL_DEMO | Status=SUCCESS | Details=Full Demo Completed. Roster: 5 processed | Incidents: 64 | Report: Output\Exam_1_AuditReport_20261020_105424.csv
+[2026-10-20 11:00:27] Mode=FULL_DEMO | Status=SUCCESS | Details=Full Demo Completed. Roster: 5 processed | Incidents: 64 | Report: Output\Exam_1_AuditReport_20261020_110027.csv

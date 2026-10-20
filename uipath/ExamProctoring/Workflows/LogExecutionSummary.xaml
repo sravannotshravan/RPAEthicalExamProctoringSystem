@@ -1,0 +1,52 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_LogExecutionSummary" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_ExecutionMode" Type="InArgument(x:String)" />
+    <x:Property Name="in_Status" Type="InArgument(x:String)" />
+    <x:Property Name="in_Details" Type="InArgument(x:String)" />
+  </x:Members>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.IO.FileSystem</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Log Execution Summary" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:LogMessage DisplayName="Log Banner" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[String.Format(&quot;========================================&#xA;UiPath Examination RPA Automation Completed&#xA;Mode: {0}&#xA;Status: {1}&#xA;Details: {2}&#xA;========================================&quot;, in_ExecutionMode, in_Status, in_Details)]" />
+    <ui:InvokeCode Code="Try&#xA;    Dim dirPath As String = &quot;Output&quot;&#xA;    If Not System.IO.Directory.Exists(dirPath) Then System.IO.Directory.CreateDirectory(dirPath)&#xA;    Dim logFile As String = System.IO.Path.Combine(dirPath, &quot;execution_log.txt&quot;)&#xA;    Dim entry As String = String.Format(&quot;[{0}] Mode={1} | Status={2} | Details={3}&quot; + System.Environment.NewLine, System.DateTime.Now.ToString(&quot;yyyy-MM-dd HH:mm:ss&quot;), in_Mode, in_Stat, in_Det)&#xA;    System.IO.File.AppendAllText(logFile, entry)&#xA;Catch&#xA;End Try" ContinueOnError="True" DisplayName="Append to Output Log File" sap2010:WorkflowViewState.IdRef="InvokeCode_1">
+      <ui:InvokeCode.Arguments>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Mode">[in_ExecutionMode]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Stat">[in_Status]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Det">[in_Details]</InArgument>
+      </ui:InvokeCode.Arguments>
+    </ui:InvokeCode>
+  </Sequence>
+</Activity>

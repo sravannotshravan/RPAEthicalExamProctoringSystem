@@ -1,0 +1,224 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_ExecutionMode" Type="InArgument(x:String)" />
+    <x:Property Name="in_ConfigFilePath" Type="InArgument(x:String)" />
+    <x:Property Name="in_SessionId" Type="InArgument(x:String)" />
+    <x:Property Name="in_ExamId" Type="InArgument(x:String)" />
+    <x:Property Name="out_ExecutionStatus" Type="OutArgument(x:String)" />
+  </x:Members>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="UiPath Ethical Exam Proctoring Engine" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Name="config" />
+      <Variable x:TypeArguments="x:String" Name="mode" />
+      <Variable x:TypeArguments="x:Boolean" Name="isHealthy" />
+      <Variable x:TypeArguments="x:String" Name="healthMessage" />
+      <Variable x:TypeArguments="x:Boolean" Name="envPassed" />
+      <Variable x:TypeArguments="x:String" Name="envMessage" />
+      <Variable x:TypeArguments="x:String" Name="lifecycleStatus" />
+      <Variable x:TypeArguments="x:Int32" Name="incidentCount" />
+      <Variable x:TypeArguments="x:String" Name="incidentSummary" />
+      <Variable x:TypeArguments="x:String" Name="reportPath" />
+      <Variable x:TypeArguments="x:Int32" Name="importedCount" />
+      <Variable x:TypeArguments="x:String" Name="importStatus" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:LogMessage DisplayName="Log Start" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;=== Starting UiPath Ethical Exam Proctoring RPA Automation ===&quot;]" />
+    <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" DisplayName="Invoke LoadConfiguration" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Workflows\LoadConfiguration.xaml">
+      <ui:InvokeWorkflowFile.Arguments>
+        <InArgument x:TypeArguments="x:String" x:Key="in_ConfigFilePath">[in_ConfigFilePath]</InArgument>
+        <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="out_Config">[config]</OutArgument>
+      </ui:InvokeWorkflowFile.Arguments>
+    </ui:InvokeWorkflowFile>
+    <Assign DisplayName="Resolve Execution Mode" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[mode]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[If(Not String.IsNullOrWhiteSpace(in_ExecutionMode), in_ExecutionMode.Trim().ToUpper(), If(config.ContainsKey("ExecutionMode"), config("ExecutionMode").Trim().ToUpper(), "FULL_DEMO"))]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:LogMessage DisplayName="Log Mode" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Format(&quot;Running in Mode: {0}&quot;, mode)]" />
+    <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" DisplayName="Invoke ValidateBackend" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Workflows\ValidateBackend.xaml">
+      <ui:InvokeWorkflowFile.Arguments>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[config]</InArgument>
+        <OutArgument x:TypeArguments="x:Boolean" x:Key="out_IsHealthy">[isHealthy]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_StatusMessage">[healthMessage]</OutArgument>
+      </ui:InvokeWorkflowFile.Arguments>
+    </ui:InvokeWorkflowFile>
+    <Switch x:TypeArguments="x:String" DisplayName="Switch on Execution Mode" Expression="[mode]" sap2010:WorkflowViewState.IdRef="Switch_1">
+      <Switch.Default>
+        <Sequence DisplayName="Full End-to-End Demo Sequence" sap2010:WorkflowViewState.IdRef="Sequence_7">
+          <ui:LogMessage DisplayName="Log Demo Step 1" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;[Step 1/4] Running Proctor Administration (Student Onboarding)...&quot;]" />
+          <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" DisplayName="Demo Import Students" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_8" UnSafe="False" WorkflowFileName="Workflows\ProctorAdministration.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[config]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_CsvPath">[String.Empty]</InArgument>
+              <OutArgument x:TypeArguments="x:Int32" x:Key="out_ImportedCount">[importedCount]</OutArgument>
+              <OutArgument x:TypeArguments="x:String" x:Key="out_Status">[importStatus]</OutArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+          <ui:LogMessage DisplayName="Log Demo Step 2" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[&quot;[Step 2/4] Running Exam Lifecycle &amp; Candidate Environment Verification...&quot;]" />
+          <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" DisplayName="Demo Exam Lifecycle" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_9" UnSafe="False" WorkflowFileName="Workflows\ExamLifecycle.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[config]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_SessionId">[in_SessionId]</InArgument>
+              <OutArgument x:TypeArguments="x:String" x:Key="out_FinalStatus">[lifecycleStatus]</OutArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+          <ui:LogMessage DisplayName="Log Demo Step 3" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[&quot;[Step 3/4] Running Incident Triage and Processing...&quot;]" />
+          <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" DisplayName="Demo Incident Triage" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_10" UnSafe="False" WorkflowFileName="Workflows\IncidentProcessing.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[config]</InArgument>
+              <OutArgument x:TypeArguments="x:Int32" x:Key="out_IncidentsProcessedCount">[incidentCount]</OutArgument>
+              <OutArgument x:TypeArguments="x:String" x:Key="out_Summary">[incidentSummary]</OutArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+          <ui:LogMessage DisplayName="Log Demo Step 4" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Info" Message="[&quot;[Step 4/4] Generating Proctor Audit Report...&quot;]" />
+          <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" DisplayName="Demo Generate Report" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_11" UnSafe="False" WorkflowFileName="Workflows\GenerateExamReport.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[config]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_ExamId">[in_ExamId]</InArgument>
+              <OutArgument x:TypeArguments="x:String" x:Key="out_ReportFilePath">[reportPath]</OutArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+          <Assign DisplayName="Set Demo Summary" sap2010:WorkflowViewState.IdRef="Assign_7">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[out_ExecutionStatus]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[String.Format("Full Demo Completed. Roster: {0} processed | Incidents: {1} | Report: {2}", importedCount, incidentCount, reportPath)]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </Switch.Default>
+      <Sequence x:Key="ENVIRONMENT_CHECK" DisplayName="Case ENVIRONMENT_CHECK" sap2010:WorkflowViewState.IdRef="Sequence_2">
+        <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" DisplayName="Invoke Environment Verification" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="Workflows\EnvironmentVerification.xaml">
+          <ui:InvokeWorkflowFile.Arguments>
+            <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[config]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_SessionId">[in_SessionId]</InArgument>
+            <OutArgument x:TypeArguments="x:Boolean" x:Key="out_CheckPassed">[envPassed]</OutArgument>
+            <OutArgument x:TypeArguments="x:String" x:Key="out_SummaryMessage">[envMessage]</OutArgument>
+          </ui:InvokeWorkflowFile.Arguments>
+        </ui:InvokeWorkflowFile>
+        <Assign DisplayName="Set Environment Status" sap2010:WorkflowViewState.IdRef="Assign_2">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[out_ExecutionStatus]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[envMessage]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </Sequence>
+      <Sequence x:Key="EXAM_LIFECYCLE" DisplayName="Case EXAM_LIFECYCLE" sap2010:WorkflowViewState.IdRef="Sequence_3">
+        <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" DisplayName="Invoke Exam Lifecycle" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="Workflows\ExamLifecycle.xaml">
+          <ui:InvokeWorkflowFile.Arguments>
+            <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[config]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_SessionId">[in_SessionId]</InArgument>
+            <OutArgument x:TypeArguments="x:String" x:Key="out_FinalStatus">[lifecycleStatus]</OutArgument>
+          </ui:InvokeWorkflowFile.Arguments>
+        </ui:InvokeWorkflowFile>
+        <Assign DisplayName="Set Lifecycle Status" sap2010:WorkflowViewState.IdRef="Assign_3">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[out_ExecutionStatus]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[lifecycleStatus]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </Sequence>
+      <Sequence x:Key="PROCESS_INCIDENTS" DisplayName="Case PROCESS_INCIDENTS" sap2010:WorkflowViewState.IdRef="Sequence_4">
+        <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" DisplayName="Invoke Incident Processing" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_5" UnSafe="False" WorkflowFileName="Workflows\IncidentProcessing.xaml">
+          <ui:InvokeWorkflowFile.Arguments>
+            <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[config]</InArgument>
+            <OutArgument x:TypeArguments="x:Int32" x:Key="out_IncidentsProcessedCount">[incidentCount]</OutArgument>
+            <OutArgument x:TypeArguments="x:String" x:Key="out_Summary">[incidentSummary]</OutArgument>
+          </ui:InvokeWorkflowFile.Arguments>
+        </ui:InvokeWorkflowFile>
+        <Assign DisplayName="Set Incident Status" sap2010:WorkflowViewState.IdRef="Assign_4">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[out_ExecutionStatus]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[incidentSummary]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </Sequence>
+      <Sequence x:Key="GENERATE_REPORT" DisplayName="Case GENERATE_REPORT" sap2010:WorkflowViewState.IdRef="Sequence_5">
+        <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" DisplayName="Invoke Generate Exam Report" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_6" UnSafe="False" WorkflowFileName="Workflows\GenerateExamReport.xaml">
+          <ui:InvokeWorkflowFile.Arguments>
+            <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[config]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_ExamId">[in_ExamId]</InArgument>
+            <OutArgument x:TypeArguments="x:String" x:Key="out_ReportFilePath">[reportPath]</OutArgument>
+          </ui:InvokeWorkflowFile.Arguments>
+        </ui:InvokeWorkflowFile>
+        <Assign DisplayName="Set Report Status" sap2010:WorkflowViewState.IdRef="Assign_5">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[out_ExecutionStatus]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[String.Format("Report generated at: {0}", reportPath)]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </Sequence>
+      <Sequence x:Key="IMPORT_STUDENTS" DisplayName="Case IMPORT_STUDENTS" sap2010:WorkflowViewState.IdRef="Sequence_6">
+        <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" DisplayName="Invoke Proctor Administration" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_7" UnSafe="False" WorkflowFileName="Workflows\ProctorAdministration.xaml">
+          <ui:InvokeWorkflowFile.Arguments>
+            <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[config]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_CsvPath">[String.Empty]</InArgument>
+            <OutArgument x:TypeArguments="x:Int32" x:Key="out_ImportedCount">[importedCount]</OutArgument>
+            <OutArgument x:TypeArguments="x:String" x:Key="out_Status">[importStatus]</OutArgument>
+          </ui:InvokeWorkflowFile.Arguments>
+        </ui:InvokeWorkflowFile>
+        <Assign DisplayName="Set Import Status" sap2010:WorkflowViewState.IdRef="Assign_6">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[out_ExecutionStatus]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[importStatus]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </Sequence>
+    </Switch>
+    <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" DisplayName="Invoke Log Execution Summary" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_12" UnSafe="False" WorkflowFileName="Workflows\LogExecutionSummary.xaml">
+      <ui:InvokeWorkflowFile.Arguments>
+        <InArgument x:TypeArguments="x:String" x:Key="in_ExecutionMode">[mode]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Status">[If(isHealthy, "SUCCESS", "COMPLETED_WITH_WARNINGS")]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Details">[out_ExecutionStatus]</InArgument>
+      </ui:InvokeWorkflowFile.Arguments>
+    </ui:InvokeWorkflowFile>
+  </Sequence>
+</Activity>

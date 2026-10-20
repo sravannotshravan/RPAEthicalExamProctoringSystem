@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+
+{% block title %}Faculty Oversight Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 mt-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h3 class="fw-bold mb-0 d-flex align-items-center">
+                <i class="bi bi-speedometer2 text-primary me-2"></i> Faculty Oversight Dashboard
+            </h3>
+            <p class="text-muted small mb-0">Centralized academic proctoring oversight, session evaluation, and human-in-the-loop review</p>
+        </div>
+        <div class="d-flex gap-2 mt-2 mt-sm-0">
+            <a href="{{ url_for('faculty.exams') }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle me-1"></i> Manage Exams
+            </a>
+            <a href="{{ url_for('faculty.students') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-person-plus me-1"></i> Register Student
+            </a>
+            <a href="{{ url_for('student.select_student_exam') }}" class="btn btn-outline-primary btn-sm" target="_blank">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Launch Student View
+            </a>
+        </div>
+    </div>
+
+    <!-- Stat Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm border-0 border-start border-primary border-4 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small fw-semibold text-uppercase">Total Exams</div>
+                            <div class="fs-3 fw-bold">{{ total_exams }}</div>
+                        </div>
+                        <div class="bg-primary-subtle text-primary p-3 rounded-circle">
+                            <i class="bi bi-journal-code fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2 small text-muted">Configured tests available</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm border-0 border-start border-success border-4 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small fw-semibold text-uppercase">Registered Students</div>
+                            <div class="fs-3 fw-bold">{{ total_students }}</div>
+                        </div>
+                        <div class="bg-success-subtle text-success p-3 rounded-circle">
+                            <i class="bi bi-people fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2 small text-muted">Eligible candidates</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm border-0 border-start border-info border-4 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small fw-semibold text-uppercase">Exam Sessions</div>
+                            <div class="fs-3 fw-bold">{{ total_sessions }}</div>
+                        </div>
+                        <div class="bg-info-subtle text-info p-3 rounded-circle">
+                            <i class="bi bi-clock-history fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2 small text-muted">
+                        <span class="badge bg-success">{{ active_sessions }} Active</span> now
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm border-0 border-start border-warning border-4 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small fw-semibold text-uppercase">Pending Incidents</div>
+                            <div class="fs-3 fw-bold text-warning">{{ pending_incidents }}</div>
+                        </div>
+                        <div class="bg-warning-subtle text-warning p-3 rounded-circle">
+                            <i class="bi bi-exclamation-triangle fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2 small text-muted">Awaiting human-in-the-loop review</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UiPath RPA Automation Engine Panel -->
+    <div class="card shadow-sm border-0 mb-4 bg-light">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary text-white p-2 rounded-3 me-3">
+                        <i class="bi bi-robot fs-3"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">UiPath RPA Proctoring Engine</h5>
+                        <p class="text-muted small mb-0">Autonomous robotic process orchestration for environment verification, incident triage, and audit reporting</p>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+                    <span class="badge bg-success-subtle text-success border px-3 py-2">
+                        <i class="bi bi-cpu me-1"></i> UiRobot Desktop Ready (v26.0)
+                    </span>
+                    <span class="badge bg-dark text-white px-3 py-2">
+                        Windows Modern VB
+                    </span>
+                </div>
+            </div>
+
+            <!-- Action Triggers -->
+            <div class="p-3 bg-white rounded border mb-3">
+                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+                    <div>
+                        <span class="fw-semibold small text-secondary me-2">Trigger Automation:</span>
+                        <div class="btn-group btn-group-sm mt-1 mt-sm-0" role="group">
+                            <button class="btn btn-outline-primary" onclick="triggerRpa('FULL_DEMO', this)">
+                                <i class="bi bi-play-circle-fill me-1"></i> Full E2E Demo
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="triggerRpa('ENVIRONMENT_CHECK', this)">
+                                <i class="bi bi-shield-check me-1"></i> Environment Check
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="triggerRpa('PROCESS_INCIDENTS', this)">
+                                <i class="bi bi-funnel me-1"></i> Triage Incidents
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="triggerRpa('GENERATE_REPORT', this)">
+                                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Generate Audit Report
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="triggerRpa('IMPORT_STUDENTS', this)">
+                                <i class="bi bi-upload me-1"></i> Import Roster
+                            </button>
+                        </div>
+                    </div>
+                    <div id="rpaStatusFeedback" class="small fw-semibold text-muted"></div>
+                </div>
+                <div id="rpaAlertBox" class="mt-3 d-none alert alert-info py-2 px-3 small mb-0"></div>
+            </div>
+
+            <!-- Recent Automation Runs -->
+            {% if recent_automation_runs %}
+            <div class="table-responsive bg-white rounded border">
+                <table class="table table-sm table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Run #</th>
+                            <th>Mode</th>
+                            <th>Status</th>
+                            <th>Triggered By</th>
+                            <th>Time</th>
+                            <th>Summary Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for run in recent_automation_runs %}
+                        <tr>
+                            <td class="font-monospace">#{{ run.id }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ run.mode }}</span></td>
+                            <td>
+                                {% if run.status == 'SUCCESS' %}
+                                    <span class="badge bg-success-subtle text-success">SUCCESS</span>
+                                {% elif run.status == 'RUNNING' %}
+                                    <span class="badge bg-warning-subtle text-warning">RUNNING</span>
+                                {% elif run.status == 'FAILED' %}
+                                    <span class="badge bg-danger-subtle text-danger">FAILED</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ run.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted">{{ run.triggered_by }}</td>
+                            <td class="text-muted">{{ run.started_at.strftime('%H:%M:%S (%d %b)') if run.started_at else 'N/A' }}</td>
+                            <td class="text-truncate text-secondary" style="max-width: 320px;" title="{{ run.message }}">{{ run.message or '--' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+    function triggerRpa(mode, btn) {
+        const feedback = document.getElementById('rpaStatusFeedback');
+        const alertBox = document.getElementById('rpaAlertBox');
+        btn.disabled = true;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Orchestrating...';
+        feedback.innerHTML = '<span class="text-primary"><i class="bi bi-arrow-repeat spin"></i> UiPath Robot executing mode ' + mode + '...</span>';
+        alertBox.className = 'mt-3 alert alert-info py-2 px-3 small mb-0';
+        alertBox.classList.remove('d-none');
+        alertBox.innerText = 'Queuing and invoking UiPath workflow for ' + mode + '...';
+
+        fetch('/api/automation/trigger', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: mode, triggered_by: 'Faculty Dashboard' })
+        })
+        .then(res => res.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            if (data.status === 'RUNNING' || data.status === 'QUEUED') {
+                feedback.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> RPA Job Dispatched (Run #' + data.run_id + ')</span>';
+                alertBox.className = 'mt-3 alert alert-success py-2 px-3 small mb-0';
+                alertBox.innerHTML = '<strong>UiPath Orchestration Initiated:</strong> ' + data.message + ' <a href="javascript:location.reload()" class="alert-link ms-2">Refresh to view update</a>';
+            } else {
+                alertBox.className = 'mt-3 alert alert-secondary py-2 px-3 small mb-0';
+                alertBox.innerText = data.message || 'Workflow executed.';
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle"></i> Trigger Error</span>';
+            alertBox.className = 'mt-3 alert alert-danger py-2 px-3 small mb-0';
+            alertBox.innerText = 'Error dispatching RPA job: ' + err.message;
+        });
+    }
+    </script>
+
+    <div class="row g-4">
+        <!-- Recent Exam Sessions -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="bi bi-collection-play me-1 text-primary"></i> Recent Examination Sessions
+                    </h6>
+                    <a href="{{ url_for('faculty.sessions') }}" class="btn btn-sm btn-link text-decoration-none">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>Session #</th>
+                                    <th>Student</th>
+                                    <th>Exam</th>
+                                    <th>Status</th>
+                                    <th>Incidents</th>
+                                    <th>Submissions</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if recent_sessions %}
+                                    {% for s in recent_sessions %}
+                                    <tr>
+                                        <td class="fw-bold">#{{ s.id }}</td>
+                                        <td>
+                                            <div class="fw-semibold">{{ s.student.name }}</div>
+                                            <span class="text-muted small">Reg: {{ s.student.register_number }}</span>
+                                        </td>
+                                        <td>{{ s.exam.title }}</td>
+                                        <td>
+                                            {% if s.status == 'ACTIVE' %}
+                                                <span class="badge bg-success-subtle text-success border"><span class="status-dot active"></span>ACTIVE</span>
+                                            {% elif s.status == 'COMPLETED' %}
+                                                <span class="badge bg-secondary-subtle text-secondary border"><span class="status-dot completed"></span>COMPLETED</span>
+                                            {% else %}
+                                                <span class="badge bg-warning-subtle text-warning border"><span class="status-dot not-started"></span>NOT_STARTED</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if s.incidents|length > 0 %}
+                                                <span class="badge bg-danger-subtle text-danger border">{{ s.incidents|length }} events</span>
+                                            {% else %}
+                                                <span class="badge bg-light text-muted border">0</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">{{ s.submissions|length }} / {{ s.exam.questions|length }}</span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('faculty.session_detail', session_id=s.id) }}" class="btn btn-sm btn-outline-primary">
+                                                Review
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">
+                                            No exam sessions recorded yet. Launch the Student Portal to start an exam.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Incidents Timeline -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="bi bi-shield-exclamation me-1 text-warning"></i> Recent Anomaly Logs
+                    </h6>
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis">OpenCV Source</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Severity</th>
+                                    <th>Review Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if recent_incidents %}
+                                    {% for inc in recent_incidents %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">{{ inc.incident_type }}</div>
+                                            <div class="text-muted small">Session #{{ inc.session_id }} &bull; {{ inc.timestamp.strftime('%H:%M:%S') if inc.timestamp else '' }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ inc.severity|lower }}">{{ inc.severity }}</span>
+                                        </td>
+                                        <td>
+                                            {% if inc.review_status == 'PENDING' %}
+                                                <span class="badge bg-warning text-dark">PENDING</span>
+                                            {% elif inc.review_status == 'REVIEWED' %}
+                                                <span class="badge bg-success">REVIEWED</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">DISMISSED</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('faculty.session_detail', session_id=inc.session_id) }}" class="btn btn-sm btn-light border">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4 text-muted">
+                                            No visual anomalies detected. System status normal.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-light py-2 small text-muted">
+                    <i class="bi bi-info-circle me-1"></i> Incidents represent computer vision anomalies flagged for academic human review.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

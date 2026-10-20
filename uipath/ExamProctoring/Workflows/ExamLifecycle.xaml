@@ -1,0 +1,96 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_ExamLifecycle" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="in_SessionId" Type="InArgument(x:String)" />
+    <x:Property Name="out_FinalStatus" Type="OutArgument(x:String)" />
+  </x:Members>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Http</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.Net.Http</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Exam Lifecycle Automation" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="targetSessionId" />
+      <Variable x:TypeArguments="x:Boolean" Name="envPassed" />
+      <Variable x:TypeArguments="x:String" Name="envMessage" />
+      <Variable x:TypeArguments="x:String" Name="startResponse" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:LogMessage DisplayName="Log Start Exam Lifecycle" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Starting RPA Exam Lifecycle orchestration...&quot;]" />
+    <ui:InvokeCode Code="Try&#xA;    If Not String.IsNullOrWhiteSpace(in_RequestedId) Then&#xA;        out_SessionId = in_RequestedId.Trim()&#xA;    Else&#xA;        Dim baseUrl As String = &quot;http://127.0.0.1:5000&quot;&#xA;        Dim apiKey As String = &quot;&quot;&#xA;        If in_Config IsNot Nothing Then&#xA;            If in_Config.ContainsKey(&quot;ApiBaseUrl&quot;) Then baseUrl = in_Config(&quot;ApiBaseUrl&quot;)&#xA;            If in_Config.ContainsKey(&quot;ApiKey&quot;) Then apiKey = in_Config(&quot;ApiKey&quot;)&#xA;        End If&#xA;        Using client As New System.Net.Http.HttpClient()&#xA;            client.Timeout = System.TimeSpan.FromSeconds(5)&#xA;            If Not String.IsNullOrWhiteSpace(apiKey) Then client.DefaultRequestHeaders.Add(&quot;X-API-Key&quot;, apiKey)&#xA;            Dim resp = client.GetAsync(baseUrl.TrimEnd(&quot;/&quot;c) + &quot;/api/sessions/eligible&quot;).GetAwaiter().GetResult()&#xA;            Dim body As String = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult()&#xA;            If resp.IsSuccessStatusCode AndAlso body.Contains(&quot;&quot;&quot;id&quot;&quot;:&quot;) Then&#xA;                Dim idx As Integer = body.IndexOf(&quot;&quot;&quot;id&quot;&quot;:&quot;)&#xA;                Dim substr As String = body.Substring(idx + 5).Trim()&#xA;                Dim endIdx As Integer = substr.IndexOfAny(New Char() {&quot;,&quot;c, &quot;}&quot;c, &quot;]&quot;c})&#xA;                If endIdx &gt; 0 Then out_SessionId = substr.Substring(0, endIdx).Trim()&#xA;            End If&#xA;        End Using&#xA;    End If&#xA;Catch&#xA;End Try&#xA;If String.IsNullOrWhiteSpace(out_SessionId) Then out_SessionId = &quot;1&quot;" ContinueOnError="True" DisplayName="Resolve Candidate Session" sap2010:WorkflowViewState.IdRef="InvokeCode_1">
+      <ui:InvokeCode.Arguments>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_RequestedId">[in_SessionId]</InArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_SessionId">[targetSessionId]</OutArgument>
+      </ui:InvokeCode.Arguments>
+    </ui:InvokeCode>
+    <ui:LogMessage DisplayName="Log Resolved Session" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Format(&quot;Executing Exam Lifecycle for Session ID: {0}&quot;, targetSessionId)]" />
+    <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" DisplayName="Invoke Environment Verification" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Workflows\EnvironmentVerification.xaml">
+      <ui:InvokeWorkflowFile.Arguments>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_SessionId">[targetSessionId]</InArgument>
+        <OutArgument x:TypeArguments="x:Boolean" x:Key="out_CheckPassed">[envPassed]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_SummaryMessage">[envMessage]</OutArgument>
+      </ui:InvokeWorkflowFile.Arguments>
+    </ui:InvokeWorkflowFile>
+    <If Condition="[envPassed]" DisplayName="Check If Environment Passed" sap2010:WorkflowViewState.IdRef="If_1">
+      <If.Then>
+        <Sequence DisplayName="Start Session" sap2010:WorkflowViewState.IdRef="Sequence_2">
+          <ui:InvokeCode Code="Try&#xA;    Dim baseUrl As String = &quot;http://127.0.0.1:5000&quot;&#xA;    Dim apiKey As String = &quot;&quot;&#xA;    If in_Config IsNot Nothing Then&#xA;        If in_Config.ContainsKey(&quot;ApiBaseUrl&quot;) Then baseUrl = in_Config(&quot;ApiBaseUrl&quot;)&#xA;        If in_Config.ContainsKey(&quot;ApiKey&quot;) Then apiKey = in_Config(&quot;ApiKey&quot;)&#xA;    End If&#xA;    Using client As New System.Net.Http.HttpClient()&#xA;        client.Timeout = System.TimeSpan.FromSeconds(5)&#xA;        If Not String.IsNullOrWhiteSpace(apiKey) Then client.DefaultRequestHeaders.Add(&quot;X-API-Key&quot;, apiKey)&#xA;        Dim resp = client.PostAsync(baseUrl.TrimEnd(&quot;/&quot;c) + &quot;/api/sessions/&quot; + in_SessionId + &quot;/start&quot;, New System.Net.Http.StringContent(&quot;{}&quot;, System.Text.Encoding.UTF8, &quot;application/json&quot;)).GetAwaiter().GetResult()&#xA;        out_Response = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult()&#xA;        out_Status = String.Format(&quot;Exam session {0} started successfully. Environment verified and active.&quot;, in_SessionId)&#xA;    End Using&#xA;Catch ex As Exception&#xA;    out_Status = &quot;Exam session start failed: &quot; + ex.Message&#xA;End Try" ContinueOnError="True" DisplayName="Trigger Session Start API" sap2010:WorkflowViewState.IdRef="InvokeCode_2">
+            <ui:InvokeCode.Arguments>
+              <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_SessionId">[targetSessionId]</InArgument>
+              <OutArgument x:TypeArguments="x:String" x:Key="out_Response">[startResponse]</OutArgument>
+              <OutArgument x:TypeArguments="x:String" x:Key="out_Status">[out_FinalStatus]</OutArgument>
+            </ui:InvokeCode.Arguments>
+          </ui:InvokeCode>
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <Sequence DisplayName="Handle Verification Failure" sap2010:WorkflowViewState.IdRef="Sequence_3">
+          <Assign DisplayName="Set Blocked Status" sap2010:WorkflowViewState.IdRef="Assign_1">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[out_FinalStatus]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[String.Format("Exam session {0} blocked by RPA pre-check: {1}", targetSessionId, envMessage)]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Else>
+    </If>
+    <ui:LogMessage DisplayName="Log Final Status" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[out_FinalStatus]" />
+  </Sequence>
+</Activity>

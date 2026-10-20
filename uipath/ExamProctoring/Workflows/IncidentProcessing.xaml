@@ -1,0 +1,55 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_IncidentProcessing" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="out_IncidentsProcessedCount" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_Summary" Type="OutArgument(x:String)" />
+  </x:Members>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Http</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.Net.Http</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Incident Processing and Triage" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:LogMessage DisplayName="Log Start Incident Triage" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Querying pending proctoring incidents for triage...&quot;]" />
+    <ui:InvokeCode Code="Try&#xA;    out_Count = 0&#xA;    Dim baseUrl As String = &quot;http://127.0.0.1:5000&quot;&#xA;    Dim apiKey As String = &quot;&quot;&#xA;    If in_Config IsNot Nothing Then&#xA;        If in_Config.ContainsKey(&quot;ApiBaseUrl&quot;) Then baseUrl = in_Config(&quot;ApiBaseUrl&quot;)&#xA;        If in_Config.ContainsKey(&quot;ApiKey&quot;) Then apiKey = in_Config(&quot;ApiKey&quot;)&#xA;    End If&#xA;    Using client As New System.Net.Http.HttpClient()&#xA;        client.Timeout = System.TimeSpan.FromSeconds(5)&#xA;        If Not String.IsNullOrWhiteSpace(apiKey) Then client.DefaultRequestHeaders.Add(&quot;X-API-Key&quot;, apiKey)&#xA;        Dim resp = client.GetAsync(baseUrl.TrimEnd(&quot;/&quot;c) + &quot;/api/incidents/pending&quot;).GetAwaiter().GetResult()&#xA;        Dim body As String = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult()&#xA;        Dim compactBody As String = body.Replace(&quot; &quot;, &quot;&quot;).Replace(Convert.ToChar(10).ToString(), &quot;&quot;).Replace(Convert.ToChar(13).ToString(), &quot;&quot;).ToLower()&#xA;        If resp.IsSuccessStatusCode Then&#xA;            Dim highCount As Integer = 0&#xA;            Dim medCount As Integer = 0&#xA;            Dim lowCount As Integer = 0&#xA;            Dim items As String() = compactBody.Split(New String() {&quot;&quot;&quot;id&quot;&quot;:&quot;}, StringSplitOptions.RemoveEmptyEntries)&#xA;            out_Count = Math.Max(0, items.Length - 1)&#xA;            Dim curIdx As Integer = 0&#xA;            While True&#xA;                curIdx = compactBody.IndexOf(&quot;&quot;&quot;severity&quot;&quot;:&quot;&quot;high&quot;&quot;&quot;, curIdx)&#xA;                If curIdx &lt; 0 Then Exit While&#xA;                highCount += 1&#xA;                curIdx += 15&#xA;            End While&#xA;            curIdx = 0&#xA;            While True&#xA;                curIdx = compactBody.IndexOf(&quot;&quot;&quot;severity&quot;&quot;:&quot;&quot;medium&quot;&quot;&quot;, curIdx)&#xA;                If curIdx &lt; 0 Then Exit While&#xA;                medCount += 1&#xA;                curIdx += 17&#xA;            End While&#xA;            lowCount = Math.Max(0, out_Count - highCount - medCount)&#xA;            If out_Count &gt; 0 Then&#xA;                out_Summary = String.Format(&quot;Triage Complete: {0} pending incidents. High Severity={1}, Medium Severity={2}, Low Severity={3}&quot;, out_Count, highCount, medCount, lowCount)&#xA;            Else&#xA;                out_Summary = &quot;Triage Complete: Zero pending proctoring incidents detected.&quot;&#xA;            End If&#xA;        Else&#xA;            out_Summary = &quot;Failed to retrieve incidents: HTTP &quot; + CInt(resp.StatusCode).ToString()&#xA;        End If&#xA;    End Using&#xA;Catch ex As Exception&#xA;    out_Count = 0&#xA;    out_Summary = &quot;Incident triage error: &quot; + ex.Message&#xA;End Try" ContinueOnError="True" DisplayName="Fetch and Categorize Incidents" sap2010:WorkflowViewState.IdRef="InvokeCode_1">
+      <ui:InvokeCode.Arguments>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
+        <OutArgument x:TypeArguments="x:Int32" x:Key="out_Count">[out_IncidentsProcessedCount]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_Summary">[out_Summary]</OutArgument>
+      </ui:InvokeCode.Arguments>
+    </ui:InvokeCode>
+    <ui:LogMessage DisplayName="Log Incident Summary" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[out_Summary]" />
+  </Sequence>
+</Activity>

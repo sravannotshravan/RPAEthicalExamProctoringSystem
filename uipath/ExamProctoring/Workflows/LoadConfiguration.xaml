@@ -1,0 +1,72 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_LoadConfiguration" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_ConfigFilePath" Type="InArgument(x:String)" />
+    <x:Property Name="out_Config" Type="OutArgument(scg:Dictionary(x:String, x:String))" />
+  </x:Members>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.IO.FileSystem</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Load Configuration" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="resolvedPath" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:LogMessage DisplayName="Log Loading Config" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Loading examination RPA configuration...&quot;]" />
+    <Assign DisplayName="Initialize Config Dictionary" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[out_Config]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[New Dictionary(Of String, String)()]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Resolve Config Path" sap2010:WorkflowViewState.IdRef="Assign_2">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[resolvedPath]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[If(String.IsNullOrWhiteSpace(in_ConfigFilePath), Path.Combine("Data", "config.json"), in_ConfigFilePath)]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:InvokeCode Code="io_Config(&quot;ApiBaseUrl&quot;) = &quot;http://127.0.0.1:5000&quot;&#xA;io_Config(&quot;ApiKey&quot;) = &quot;poc-uipath-local-key&quot;&#xA;io_Config(&quot;ExecutionMode&quot;) = &quot;FULL_DEMO&quot;&#xA;io_Config(&quot;ReportsOutputDir&quot;) = &quot;Output&quot;&#xA;io_Config(&quot;ImportFilePath&quot;) = &quot;Data\sample_students.csv&quot;&#xA;io_Config(&quot;ProhibitedProcesses&quot;) = &quot;wireshark,fiddler,cheatengine,x64dbg,ida64,processhacker&quot;&#xA;io_Config(&quot;SupportedBrowsers&quot;) = &quot;msedge,chrome,firefox,brave&quot;&#xA;io_Config(&quot;PollIntervalSeconds&quot;) = &quot;3&quot;&#xA;io_Config(&quot;MaxPollAttempts&quot;) = &quot;5&quot;&#xA;If System.IO.File.Exists(in_Path) Then&#xA;    Dim content As String = System.IO.File.ReadAllText(in_Path)&#xA;    For Each line As String In content.Split(New Char() {Convert.ToChar(10), Convert.ToChar(13)}, StringSplitOptions.RemoveEmptyEntries)&#xA;        Dim trimmed As String = line.Trim()&#xA;        If trimmed.StartsWith(&quot;&quot;&quot;&quot;) AndAlso trimmed.Contains(&quot;&quot;&quot;:&quot;&quot;&quot;) Then&#xA;            Dim parts As String() = trimmed.Split(New String() {&quot;&quot;&quot;:&quot;&quot;&quot;}, StringSplitOptions.None)&#xA;            If parts.Length = 2 Then&#xA;                Dim k As String = parts(0).TrimStart(&quot;&quot;&quot;&quot;c).TrimEnd(&quot;&quot;&quot;&quot;c)&#xA;                Dim v As String = parts(1).TrimStart(&quot;&quot;&quot;&quot;c).TrimEnd(&quot;&quot;&quot;&quot;c, &quot;,&quot;c)&#xA;                io_Config(k) = v&#xA;            End If&#xA;        End If&#xA;    Next&#xA;End If&#xA;Dim envKey As String = System.Environment.GetEnvironmentVariable(&quot;UIPATH_API_KEY&quot;)&#xA;If Not String.IsNullOrWhiteSpace(envKey) Then io_Config(&quot;ApiKey&quot;) = envKey&#xA;Dim envUrl As String = System.Environment.GetEnvironmentVariable(&quot;API_BASE_URL&quot;)&#xA;If Not String.IsNullOrWhiteSpace(envUrl) Then io_Config(&quot;ApiBaseUrl&quot;) = envUrl" ContinueOnError="True" DisplayName="Load Settings" sap2010:WorkflowViewState.IdRef="InvokeCode_1">
+      <ui:InvokeCode.Arguments>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Path">[resolvedPath]</InArgument>
+        <InOutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="io_Config">[out_Config]</InOutArgument>
+      </ui:InvokeCode.Arguments>
+    </ui:InvokeCode>
+    <ui:LogMessage DisplayName="Log Config Success" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Format(&quot;Configuration loaded. API: {0}, Mode: {1}, Output: {2}&quot;, out_Config(&quot;ApiBaseUrl&quot;), out_Config(&quot;ExecutionMode&quot;), out_Config(&quot;ReportsOutputDir&quot;))]" />
+  </Sequence>
+</Activity>

@@ -1,0 +1,55 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_ValidateBackend" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="out_IsHealthy" Type="OutArgument(x:Boolean)" />
+    <x:Property Name="out_StatusMessage" Type="OutArgument(x:String)" />
+  </x:Members>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Http</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.Net.Http</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Validate Backend Service" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:LogMessage DisplayName="Log Start Health Check" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Executing RPA Backend Health Check...&quot;]" />
+    <ui:InvokeCode Code="Try&#xA;    out_IsHealthy = False&#xA;    Dim baseUrl As String = &quot;http://127.0.0.1:5000&quot;&#xA;    Dim apiKey As String = &quot;&quot;&#xA;    If in_Config IsNot Nothing Then&#xA;        If in_Config.ContainsKey(&quot;ApiBaseUrl&quot;) Then baseUrl = in_Config(&quot;ApiBaseUrl&quot;)&#xA;        If in_Config.ContainsKey(&quot;ApiKey&quot;) Then apiKey = in_Config(&quot;ApiKey&quot;)&#xA;    End If&#xA;    Dim url As String = baseUrl.TrimEnd(&quot;/&quot;c) + &quot;/api/health&quot;&#xA;    Using client As New System.Net.Http.HttpClient()&#xA;        client.Timeout = System.TimeSpan.FromSeconds(5)&#xA;        If Not String.IsNullOrWhiteSpace(apiKey) Then&#xA;            client.DefaultRequestHeaders.Add(&quot;X-API-Key&quot;, apiKey)&#xA;        End If&#xA;        Dim response = client.GetAsync(url).GetAwaiter().GetResult()&#xA;        Dim body As String = response.Content.ReadAsStringAsync().GetAwaiter().GetResult()&#xA;        Dim lowerBody As String = body.ToLower()&#xA;        If response.IsSuccessStatusCode AndAlso lowerBody.Contains(&quot;&quot;&quot;status&quot;&quot;&quot;) AndAlso lowerBody.Contains(&quot;&quot;&quot;healthy&quot;&quot;&quot;) Then&#xA;            out_IsHealthy = True&#xA;            out_StatusMessage = &quot;Backend is online and healthy: &quot; + body&#xA;        Else&#xA;            out_IsHealthy = False&#xA;            out_StatusMessage = &quot;Backend returned status &quot; + CInt(response.StatusCode).ToString() + &quot;: &quot; + body&#xA;        End If&#xA;    End Using&#xA;Catch ex As Exception&#xA;    out_IsHealthy = False&#xA;    out_StatusMessage = &quot;Backend connection error: &quot; + ex.Message&#xA;End Try" ContinueOnError="True" DisplayName="Call Health Endpoint" sap2010:WorkflowViewState.IdRef="InvokeCode_1">
+      <ui:InvokeCode.Arguments>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
+        <OutArgument x:TypeArguments="x:Boolean" x:Key="out_IsHealthy">[out_IsHealthy]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_StatusMessage">[out_StatusMessage]</OutArgument>
+      </ui:InvokeCode.Arguments>
+    </ui:InvokeCode>
+    <ui:LogMessage DisplayName="Log Result" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Format(&quot;Backend Health Result: IsHealthy={0}, Message={1}&quot;, out_IsHealthy, out_StatusMessage)]" />
+  </Sequence>
+</Activity>

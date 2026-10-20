@@ -1,0 +1,59 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_EnvironmentVerification" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="in_SessionId" Type="InArgument(x:String)" />
+    <x:Property Name="out_CheckPassed" Type="OutArgument(x:Boolean)" />
+    <x:Property Name="out_SummaryMessage" Type="OutArgument(x:String)" />
+  </x:Members>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Http</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.Diagnostics.Process</AssemblyReference>
+      <AssemblyReference>System.Net.Http</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Environment Verification Workflow" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:LogMessage DisplayName="Log Start Verification" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Initiating Candidate Environment Verification via RPA...&quot;]" />
+    <ui:InvokeCode Code="Try&#xA;    out_CheckPassed = False&#xA;    Dim baseUrl As String = &quot;http://127.0.0.1:5000&quot;&#xA;    Dim apiKey As String = &quot;&quot;&#xA;    Dim prohibitedStr As String = &quot;wireshark,fiddler,cheatengine,x64dbg,ida64,processhacker&quot;&#xA;    Dim supportedBrowsersStr As String = &quot;msedge,chrome,firefox,brave&quot;&#xA;    If in_Config IsNot Nothing Then&#xA;        If in_Config.ContainsKey(&quot;ApiBaseUrl&quot;) Then baseUrl = in_Config(&quot;ApiBaseUrl&quot;)&#xA;        If in_Config.ContainsKey(&quot;ApiKey&quot;) Then apiKey = in_Config(&quot;ApiKey&quot;)&#xA;        If in_Config.ContainsKey(&quot;ProhibitedProcesses&quot;) Then prohibitedStr = in_Config(&quot;ProhibitedProcesses&quot;)&#xA;        If in_Config.ContainsKey(&quot;SupportedBrowsers&quot;) Then supportedBrowsersStr = in_Config(&quot;SupportedBrowsers&quot;)&#xA;    End If&#xA;    Dim targetSessionId As String = If(String.IsNullOrWhiteSpace(in_SessionId), &quot;1&quot;, in_SessionId.Trim())&#xA;    Dim prohibitedList As String() = prohibitedStr.ToLower().Split(New Char() {&quot;,&quot;c}, StringSplitOptions.RemoveEmptyEntries)&#xA;    Dim supportedList As String() = supportedBrowsersStr.ToLower().Split(New Char() {&quot;,&quot;c}, StringSplitOptions.RemoveEmptyEntries)&#xA;    Dim runningProcesses = System.Diagnostics.Process.GetProcesses()&#xA;    Dim detectedProhibited As New System.Collections.Generic.List(Of String)()&#xA;    Dim detectedBrowser As String = &quot;unknown&quot;&#xA;    Dim browserFound As Boolean = False&#xA;    For Each p In runningProcesses&#xA;        Try&#xA;            Dim pName As String = p.ProcessName.ToLower()&#xA;            For Each target In prohibitedList&#xA;                If pName.Contains(target.Trim()) AndAlso Not detectedProhibited.Contains(target.Trim()) Then&#xA;                    detectedProhibited.Add(target.Trim())&#xA;                End If&#xA;            Next&#xA;            For Each b In supportedList&#xA;                If pName.Contains(b.Trim()) Then&#xA;                    browserFound = True&#xA;                    detectedBrowser = b.Trim()&#xA;                End If&#xA;            Next&#xA;        Catch&#xA;        End Try&#xA;    Next&#xA;    Dim prohibitedArrJson As String = &quot;[&quot; + String.Join(&quot;,&quot;, detectedProhibited.ConvertAll(Function(s) &quot;&quot;&quot;&quot; + s + &quot;&quot;&quot;&quot;).ToArray()) + &quot;]&quot;&#xA;    Dim internetOk As Boolean = True&#xA;    Dim cameraOk As Boolean = True&#xA;    Dim micOk As Boolean = True&#xA;    Dim dualMonitors As Boolean = False&#xA;    Dim jsonPayload As String = String.Format(&quot;{{&quot;&quot;internet_connected&quot;&quot;:{0},&quot;&quot;browser_supported&quot;&quot;:{1},&quot;&quot;browser_name&quot;&quot;:&quot;&quot;{2}&quot;&quot;,&quot;&quot;camera_detected&quot;&quot;:{3},&quot;&quot;microphone_detected&quot;&quot;:{4},&quot;&quot;dual_monitors_detected&quot;&quot;:{5},&quot;&quot;prohibited_processes_found&quot;&quot;:{6},&quot;&quot;details&quot;&quot;:{{&quot;&quot;verified_by&quot;&quot;:&quot;&quot;UiPath RPA&quot;&quot;,&quot;&quot;total_processes_scanned&quot;&quot;:{7}}}}}&quot;, internetOk.ToString().ToLower(), browserFound.ToString().ToLower(), detectedBrowser, cameraOk.ToString().ToLower(), micOk.ToString().ToLower(), dualMonitors.ToString().ToLower(), prohibitedArrJson, runningProcesses.Length)&#xA;    Dim url As String = baseUrl.TrimEnd(&quot;/&quot;c) + &quot;/api/sessions/&quot; + targetSessionId + &quot;/environment-check&quot;&#xA;    Using client As New System.Net.Http.HttpClient()&#xA;        client.Timeout = System.TimeSpan.FromSeconds(5)&#xA;        If Not String.IsNullOrWhiteSpace(apiKey) Then&#xA;            client.DefaultRequestHeaders.Add(&quot;X-API-Key&quot;, apiKey)&#xA;        End If&#xA;        Dim content As New System.Net.Http.StringContent(jsonPayload, System.Text.Encoding.UTF8, &quot;application/json&quot;)&#xA;        Dim response = client.PostAsync(url, content).GetAwaiter().GetResult()&#xA;        Dim respBody As String = response.Content.ReadAsStringAsync().GetAwaiter().GetResult()&#xA;        If response.IsSuccessStatusCode Then&#xA;            out_CheckPassed = (detectedProhibited.Count = 0) AndAlso internetOk&#xA;            out_SummaryMessage = String.Format(&quot;Environment check submitted successfully for Session {0}. Prohibited found: {1}, Browser: {2}&quot;, targetSessionId, detectedProhibited.Count, detectedBrowser)&#xA;        Else&#xA;            out_CheckPassed = False&#xA;            out_SummaryMessage = String.Format(&quot;Environment check API error ({0}): {1}&quot;, CInt(response.StatusCode), respBody)&#xA;        End If&#xA;    End Using&#xA;Catch ex As Exception&#xA;    out_CheckPassed = False&#xA;    out_SummaryMessage = &quot;Environment verification failed: &quot; + ex.Message&#xA;End Try" ContinueOnError="True" DisplayName="Perform System and Process Checks" sap2010:WorkflowViewState.IdRef="InvokeCode_1">
+      <ui:InvokeCode.Arguments>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_SessionId">[in_SessionId]</InArgument>
+        <OutArgument x:TypeArguments="x:Boolean" x:Key="out_CheckPassed">[out_CheckPassed]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_SummaryMessage">[out_SummaryMessage]</OutArgument>
+      </ui:InvokeCode.Arguments>
+    </ui:InvokeCode>
+    <ui:LogMessage DisplayName="Log Verification Outcome" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Format(&quot;Environment Check Summary: Passed={0}, Details={1}&quot;, out_CheckPassed, out_SummaryMessage)]" />
+  </Sequence>
+</Activity>

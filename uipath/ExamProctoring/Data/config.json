@@ -1,0 +1,12 @@
+{
+  "ApiBaseUrl": "http://127.0.0.1:5000",
+  "ApiKey": "poc-uipath-local-key",
+  "ExecutionMode": "FULL_DEMO",
+  "ReportsOutputDir": "Output",
+  "ImportFilePath": "Data\\sample_students.csv",
+  "ProhibitedProcesses": "wireshark,fiddler,cheatengine,x64dbg,ida64,processhacker,discord,telegram,teamviewer,anydesk,obs64,chatgpt,whatsapp",
+  "SupportedBrowsers": "msedge,chrome,firefox,brave",
+  "PollIntervalSeconds": "3",
+  "MaxPollAttempts": "5",
+  "RequireHardwareChecks": "False"
+}

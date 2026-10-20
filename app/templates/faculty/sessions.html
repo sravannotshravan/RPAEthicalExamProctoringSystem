@@ -1,0 +1,526 @@
+{% extends 'base.html' %}
+
+{% block title %}Examination Sessions & Monitoring{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-clock-history text-primary me-2"></i> Examination Sessions & Incidents
+            </h3>
+            <p class="text-muted small mb-0">Monitor test attempts, verify candidate submissions, and inspect proctoring anomaly logs</p>
+        </div>
+        <a href="{{ url_for('faculty.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Dashboard
+        </a>
+    </div>
+
+    <!-- Student Infraction Timeline Visualizer Card -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-5">
+                    <div class="d-flex align-items-center">
+                        <div class="p-2 bg-primary-subtle text-primary rounded-3 me-3">
+                            <i class="bi bi-graph-up fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Student Infraction Telemetry: Severity vs. Time</h6>
+                            <small class="text-muted">Interactive graph of proctoring anomalies against exam timeline</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light text-muted fw-semibold">
+                            <i class="bi bi-person-badge me-1"></i> Student:
+                        </span>
+                        <select id="studentSessionSelector" class="form-select form-select-sm" onchange="onStudentSelectChange(this.value)">
+                            {% for s in sessions %}
+                            <option value="{{ s.id }}" {% if loop.first %}selected{% endif %}>
+                                {{ s.student.name }} ({{ s.student.register_number }}) &bull; {{ s.incidents|length }} infractions
+                            </option>
+                            {% endfor %}
+                            <option value="ALL">Compare All Students (Multi-Student Overlay)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-lg-3 text-lg-end">
+                    <div class="btn-group btn-group-sm" role="group" id="sessionsSeverityFilter">
+                        <button type="button" class="btn btn-outline-secondary active" onclick="filterSessionsChart('ALL', this)">All</button>
+                        <button type="button" class="btn btn-outline-danger" onclick="filterSessionsChart('HIGH', this)">High</button>
+                        <button type="button" class="btn btn-outline-warning" onclick="filterSessionsChart('MEDIUM', this)">Med</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="filterSessionsChart('LOW', this)">Low</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-3">
+            <!-- Selected Candidate Live Stats -->
+            <div class="row g-2 mb-3 text-center small" id="candidateStatsRow">
+                <div class="col-6 col-md-3">
+                    <div class="p-2 border rounded bg-light">
+                        <span class="text-muted d-block">Selected Candidate:</span>
+                        <span class="fs-6 fw-bold text-dark text-truncate d-block" id="multiMetricCandidate">--</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-2 border rounded bg-light">
+                        <span class="text-danger d-block fw-semibold">High Severity (Lv 3):</span>
+                        <span class="fs-6 fw-bold text-danger" id="multiMetricHigh">0</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-2 border rounded bg-light">
+                        <span class="text-warning d-block fw-semibold">Medium Severity (Lv 2):</span>
+                        <span class="fs-6 fw-bold text-warning" id="multiMetricMed">0</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-2 border rounded bg-light">
+                        <span class="text-primary d-block fw-semibold">Low Severity (Lv 1):</span>
+                        <span class="fs-6 fw-bold text-primary" id="multiMetricLow">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div id="chartContainer" style="position: relative; height: 320px; width: 100%;">
+                <canvas id="multiStudentTimelineChart"></canvas>
+            </div>
+            <div id="multiChartEmptyState" class="d-none text-center py-5 text-muted">
+                <i class="bi bi-shield-check text-success display-6 d-block mb-2"></i>
+                No infractions logged for the selected candidate. Environment is 100% compliant.
+            </div>
+        </div>
+        <div class="card-footer bg-light py-2 small d-flex flex-wrap justify-content-between align-items-center text-muted">
+            <div>
+                <span class="me-3"><span class="badge bg-danger p-1 me-1">&bull;</span> High (3+ Faces / Phone & Devices / Speech / Unauthorized App)</span>
+                <span class="me-3"><span class="badge bg-warning p-1 me-1">&bull;</span> Medium (2 Faces / Face Out of Frame / Audio Spike)</span>
+                <span><span class="badge bg-primary p-1 me-1">&bull;</span> Low (Gaze Shift / Minor Anomaly)</span>
+            </div>
+            <div id="selectedCandidateLinkContainer">
+                <a id="btnViewSessionDirect" href="#" class="btn btn-sm btn-outline-primary py-0 px-2">
+                    <i class="bi bi-box-arrow-up-right me-1"></i> Open Candidate Session Details
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Session ID</th>
+                            <th>Candidate</th>
+                            <th>Exam Title</th>
+                            <th>Started</th>
+                            <th>Ended</th>
+                            <th>Status</th>
+                            <th>Incidents</th>
+                            <th>Submissions</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if sessions %}
+                            {% for s in sessions %}
+                            <tr>
+                                <td class="fw-bold">#{{ s.id }}</td>
+                                <td>
+                                    <div class="fw-semibold">{{ s.student.name }}</div>
+                                    <div class="text-muted small">Reg: {{ s.student.register_number }}</div>
+                                </td>
+                                <td>{{ s.exam.title }}</td>
+                                <td class="small text-muted">
+                                    {{ s.started_at.strftime('%Y-%m-%d %H:%M:%S') if s.started_at else 'Not started' }}
+                                </td>
+                                <td class="small text-muted">
+                                    {{ s.ended_at.strftime('%Y-%m-%d %H:%M:%S') if s.ended_at else '--' }}
+                                </td>
+                                <td>
+                                    {% if s.status == 'ACTIVE' %}
+                                        <span class="badge bg-success-subtle text-success border"><span class="status-dot active"></span>ACTIVE</span>
+                                    {% elif s.status == 'COMPLETED' %}
+                                        <span class="badge bg-secondary-subtle text-secondary border"><span class="status-dot completed"></span>COMPLETED</span>
+                                    {% else %}
+                                        <span class="badge bg-warning-subtle text-warning border"><span class="status-dot not-started"></span>NOT_STARTED</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if s.incidents|length > 0 %}
+                                        <span class="badge bg-danger-subtle text-danger border">
+                                            <i class="bi bi-exclamation-circle me-1"></i> {{ s.incidents|length }} Anomaly Logs
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-light text-muted border">0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        {{ s.submissions|length }} / {{ s.exam.questions|length }}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('faculty.session_detail', session_id=s.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-clipboard-data me-1"></i> Review Session
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5 text-muted">
+                                    No examination sessions recorded yet. Launch a test from the Student Portal to generate sessions.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const rawSessions = {{ sessions_json|tojson }};
+    let timelineChart = null;
+    let activeFilter = 'ALL';
+    let currentSelectedId = 'ALL';
+
+    // Parse and normalize sessions data
+    const sessions = (rawSessions || []).map(function(s) {
+        const incidents = (s.incidents || []).map(function(inc) {
+            const d = inc.timestamp ? new Date(inc.timestamp) : new Date();
+            const timeStr = !isNaN(d.getTime()) ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'N/A';
+            const sevUpper = (inc.severity || 'LOW').toUpperCase();
+            const sevNum = sevUpper === 'HIGH' ? 3 : (sevUpper === 'MEDIUM' ? 2 : 1);
+            const color = sevUpper === 'HIGH' ? '#dc3545' : (sevUpper === 'MEDIUM' ? '#fd7e14' : '#0d6efd');
+            return {
+                id: inc.id,
+                sessionId: s.id,
+                studentName: s.student_name || 'Candidate',
+                timestamp: d,
+                timeLabel: timeStr,
+                incidentType: inc.incident_type || 'ANOMALY',
+                severity: sevUpper,
+                severityNum: sevNum,
+                source: inc.source || 'CV',
+                details: inc.details || '',
+                reviewStatus: inc.review_status || 'PENDING',
+                color: color
+            };
+        }).sort(function(a, b) { return a.timestamp - b.timestamp; });
+
+        return {
+            id: s.id,
+            studentName: s.student_name || 'Candidate #' + s.id,
+            studentReg: s.student_reg || 'N/A',
+            examTitle: s.exam_title || 'Exam',
+            incidents: incidents
+        };
+    });
+
+    // Default selection: pick the first session that has incidents, or first session
+    const firstWithIncidents = sessions.find(s => s.incidents.length > 0);
+    const selector = document.getElementById('studentSessionSelector');
+    if (firstWithIncidents && selector) {
+        currentSelectedId = String(firstWithIncidents.id);
+        selector.value = currentSelectedId;
+    } else if (sessions.length > 0 && selector) {
+        currentSelectedId = String(sessions[0].id);
+        selector.value = currentSelectedId;
+    }
+
+    const canvas = document.getElementById('multiStudentTimelineChart');
+    const container = document.getElementById('chartContainer');
+    const emptyState = document.getElementById('multiChartEmptyState');
+    const directBtn = document.getElementById('btnViewSessionDirect');
+
+    function updateMetrics(label, high, med, low) {
+        const elCand = document.getElementById('multiMetricCandidate');
+        const elHigh = document.getElementById('multiMetricHigh');
+        const elMed = document.getElementById('multiMetricMed');
+        const elLow = document.getElementById('multiMetricLow');
+        if (elCand) elCand.textContent = label;
+        if (elHigh) elHigh.textContent = high;
+        if (elMed) elMed.textContent = med;
+        if (elLow) elLow.textContent = low;
+    }
+
+    function renderChart() {
+        if (!canvas) return;
+
+        let isOverlay = (currentSelectedId === 'ALL');
+        let displayedIncidents = [];
+
+        if (isOverlay) {
+            // Aggregate all incidents across all students
+            sessions.forEach(s => {
+                displayedIncidents = displayedIncidents.concat(s.incidents);
+            });
+            displayedIncidents.sort((a, b) => a.timestamp - b.timestamp);
+
+            const highCount = displayedIncidents.filter(i => i.severity === 'HIGH').length;
+            const medCount = displayedIncidents.filter(i => i.severity === 'MEDIUM').length;
+            const lowCount = displayedIncidents.filter(i => i.severity === 'LOW').length;
+            updateMetrics('All Candidates (' + sessions.length + ')', highCount, medCount, lowCount);
+
+            if (directBtn) directBtn.parentElement.classList.add('d-none');
+        } else {
+            const currentSession = sessions.find(s => String(s.id) === String(currentSelectedId));
+            if (currentSession) {
+                displayedIncidents = currentSession.incidents;
+                const highCount = displayedIncidents.filter(i => i.severity === 'HIGH').length;
+                const medCount = displayedIncidents.filter(i => i.severity === 'MEDIUM').length;
+                const lowCount = displayedIncidents.filter(i => i.severity === 'LOW').length;
+                updateMetrics(currentSession.studentName + ' (' + currentSession.studentReg + ')', highCount, medCount, lowCount);
+
+                if (directBtn) {
+                    directBtn.href = '/faculty/sessions/' + currentSession.id;
+                    directBtn.parentElement.classList.remove('d-none');
+                }
+            } else {
+                updateMetrics('None', 0, 0, 0);
+            }
+        }
+
+        // Apply severity filter
+        let filtered = displayedIncidents;
+        if (activeFilter !== 'ALL') {
+            filtered = displayedIncidents.filter(i => i.severity === activeFilter);
+        }
+
+        if (filtered.length === 0) {
+            if (container) container.classList.add('d-none');
+            if (emptyState) emptyState.classList.remove('d-none');
+            if (timelineChart) {
+                timelineChart.destroy();
+                timelineChart = null;
+            }
+            return;
+        }
+
+        if (container) container.classList.remove('d-none');
+        if (emptyState) emptyState.classList.add('d-none');
+
+        if (typeof Chart === 'undefined') {
+            renderFallbackCanvas(filtered);
+            return;
+        }
+
+        const labels = filtered.map(i => i.timeLabel);
+        const dataValues = filtered.map(i => i.severityNum);
+        const pointColors = filtered.map(i => i.color);
+        const pointRadii = filtered.map(i => i.severity === 'HIGH' ? 8 : (i.severity === 'MEDIUM' ? 6 : 5));
+
+        const ctx = canvas.getContext('2d');
+        if (timelineChart) {
+            timelineChart.destroy();
+        }
+
+        timelineChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: isOverlay ? 'Infraction Severity (Multi-Student)' : 'Infraction Severity',
+                    data: dataValues,
+                    borderColor: 'rgba(108, 117, 125, 0.45)',
+                    borderWidth: 2,
+                    borderDash: [4, 4],
+                    backgroundColor: 'rgba(13, 110, 253, 0.04)',
+                    pointBackgroundColor: pointColors,
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: pointRadii,
+                    pointHoverRadius: 9,
+                    tension: 0.15,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(33, 37, 41, 0.95)',
+                        titleFont: { size: 13, weight: 'bold' },
+                        bodyFont: { size: 12 },
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            title: function(items) {
+                                const idx = items[0].dataIndex;
+                                const item = filtered[idx];
+                                return (item.studentName ? item.studentName + ' &bull; ' : '') + 'Time: ' + item.timeLabel + ' (#' + item.id + ')';
+                            },
+                            label: function(context) {
+                                const item = filtered[context.dataIndex];
+                                return [
+                                    'Candidate: ' + item.studentName,
+                                    'Severity: ' + item.severity + ' (Level ' + item.severityNum + ')',
+                                    'Type: ' + item.incidentType,
+                                    'Source: ' + item.source,
+                                    'Status: ' + item.reviewStatus,
+                                    'Details: ' + (item.details || 'None')
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 0.5,
+                        max: 3.5,
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(val) {
+                                if (val === 1) return 'Low (Lv 1)';
+                                if (val === 2) return 'Medium (Lv 2)';
+                                if (val === 3) return 'High (Lv 3)';
+                                return '';
+                            },
+                            font: { size: 12, weight: 'bold' }
+                        },
+                        grid: {
+                            color: function(ctx) {
+                                if (ctx.tick.value === 3) return 'rgba(220, 53, 69, 0.2)';
+                                if (ctx.tick.value === 2) return 'rgba(253, 126, 20, 0.2)';
+                                if (ctx.tick.value === 1) return 'rgba(13, 110, 253, 0.2)';
+                                return 'rgba(0, 0, 0, 0.05)';
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Severity of Infraction',
+                            font: { size: 12, weight: 'bold' },
+                            color: '#495057'
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 0,
+                            font: { size: 11 }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Timeline (Time of Day)',
+                            font: { size: 12, weight: 'bold' },
+                            color: '#495057'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderFallbackCanvas(data) {
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width = canvas.parentElement.clientWidth || 800;
+        const h = canvas.height = 320;
+        ctx.clearRect(0, 0, w, h);
+
+        const padLeft = 90;
+        const padRight = 30;
+        const padTop = 30;
+        const padBottom = 50;
+        const plotW = w - padLeft - padRight;
+        const plotH = h - padTop - padBottom;
+
+        const levels = [
+            { num: 3, label: 'High (Lv 3)', color: '#dc3545', y: padTop + plotH * 0.15 },
+            { num: 2, label: 'Medium (Lv 2)', color: '#fd7e14', y: padTop + plotH * 0.5 },
+            { num: 1, label: 'Low (Lv 1)', color: '#0d6efd', y: padTop + plotH * 0.85 }
+        ];
+
+        levels.forEach(l => {
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.moveTo(padLeft, l.y);
+            ctx.lineTo(w - padRight, l.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = l.color;
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(l.label, padLeft - 10, l.y + 4);
+        });
+
+        const points = data.map((d, idx) => {
+            const x = data.length === 1 ? padLeft + plotW / 2 : padLeft + (idx / (data.length - 1)) * plotW;
+            const lvlObj = levels.find(l => l.num === d.severityNum) || levels[2];
+            return { x, y: lvlObj.y, item: d };
+        });
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(108, 117, 125, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        points.forEach((pt, i) => {
+            if (i === 0) ctx.moveTo(pt.x, pt.y);
+            else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        points.forEach(pt => {
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.item.severity === 'HIGH' ? 7 : (pt.item.severity === 'MEDIUM' ? 6 : 5), 0, Math.PI * 2);
+            ctx.fillStyle = pt.item.color;
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#6c757d';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(pt.item.timeLabel, pt.x, h - padBottom + 16);
+        });
+    }
+
+    // Expose handlers globally
+    window.onStudentSelectChange = function(sessionId) {
+        currentSelectedId = sessionId;
+        renderChart();
+    };
+
+    window.filterSessionsChart = function(severity, btn) {
+        activeFilter = severity;
+        const group = document.getElementById('sessionsSeverityFilter');
+        if (group) {
+            group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        }
+        if (btn) btn.classList.add('active');
+        renderChart();
+    };
+
+    // Initialize on load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', renderChart);
+    } else {
+        renderChart();
+    }
+
+    window.addEventListener('resize', function() {
+        if (typeof Chart === 'undefined') {
+            renderChart();
+        }
+    });
+})();
+</script>
+{% endblock %}
+

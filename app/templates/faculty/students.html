@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Students{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-people text-primary me-2"></i> Student Directory
+            </h3>
+            <p class="text-muted small mb-0">Register candidates and review session enrollments</p>
+        </div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+            <i class="bi bi-person-plus me-1"></i> Register Student
+        </button>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Candidate Name</th>
+                            <th>Registration Number</th>
+                            <th>Institutional Email</th>
+                            <th>Exam Sessions</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if students %}
+                            {% for student in students %}
+                            <tr>
+                                <td class="fw-bold text-muted">#{{ student.id }}</td>
+                                <td>
+                                    <div class="fw-bold">{{ student.name }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace">{{ student.register_number }}</span>
+                                </td>
+                                <td class="text-muted small">
+                                    {{ student.email }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary border">
+                                        {{ student.sessions|length }} Sessions
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <form action="{{ url_for('faculty.delete_student', student_id=student.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Remove student {{ student.name }}? All related test sessions will be deleted.');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Student">
+                                            <i class="bi bi-trash me-1"></i> Remove
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    No students registered yet. Click "Register Student" or run the seed script to load demo candidates.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add Student -->
+<div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('faculty.create_student') }}" method="POST">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Register New Student</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Candidate Full Name *</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. Jane Doe" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Registration / Roll Number *</label>
+                        <input type="text" name="register_number" class="form-control" placeholder="e.g. REG2026101" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email Address *</label>
+                        <input type="email" name="email" class="form-control" placeholder="e.g. jane.doe@university.edu" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Register Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

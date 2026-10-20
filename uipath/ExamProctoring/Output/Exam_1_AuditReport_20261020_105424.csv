@@ -1,0 +1,4 @@
+SessionId,StudentName,RegisterNumber,Status,IntegrityScore,TotalScore,IncidentsCount,EnvironmentStatus,Recommendation
+1,Demo Student 1,REG2026001,ACTIVE,100,100,25,VERIFIED,FLAGGED_FOR_MANUAL_REVIEW
+2,Demo Student 1,REG2026001,COMPLETED,100,300,1,VERIFIED,CLEARED
+3,Demo Student 1,REG2026001,COMPLETED,100,300,40,VERIFIED,FLAGGED_FOR_MANUAL_REVIEW
