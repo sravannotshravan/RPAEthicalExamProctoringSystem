@@ -9,7 +9,7 @@ In the final production architecture, this service will be replaced with a secur
 isolated sandbox execution engine such as Judge0 or Docker-based runner.
 """
 
-def execute_mock_code(code: str, language: str = 'python', question_id: int = None) -> dict:
+def execute_mock_code(code: str, language: str = 'python', question_id: int | None = None) -> dict:
     """
     Simulates code execution and evaluation against test cases.
     """

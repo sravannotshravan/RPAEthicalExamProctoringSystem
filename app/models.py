@@ -1,18 +1,29 @@
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING, ClassVar, Optional
 from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy.query import Query
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 db = SQLAlchemy()
 
-class Student(db.Model):
+# db.Model is generated at runtime, so type checkers can't see its keyword-argument
+# constructor or the Mapped attributes below. Give them a typed stand-in instead.
+if TYPE_CHECKING:
+    class Model(DeclarativeBase):
+        query: ClassVar[Query]
+else:
+    Model = db.Model
+
+class Student(Model):
     __tablename__ = 'students'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    register_number = db.Column(db.String(64), unique=True, nullable=False)
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(db.String(120), nullable=False)
+    email: Mapped[str] = mapped_column(db.String(120), unique=True, nullable=False)
+    register_number: Mapped[str] = mapped_column(db.String(64), unique=True, nullable=False)
 
     # Relationships
-    sessions = db.relationship('ExamSession', back_populates='student', cascade='all, delete-orphan')
+    sessions: Mapped[list['ExamSession']] = relationship('ExamSession', back_populates='student', cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
@@ -24,18 +35,18 @@ class Student(db.Model):
         }
 
 
-class Exam(db.Model):
+class Exam(Model):
     __tablename__ = 'exams'
 
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text, default='')
-    duration_minutes = db.Column(db.Integer, default=30, nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(db.String(200), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(db.Text, default='')
+    duration_minutes: Mapped[int] = mapped_column(db.Integer, default=30, nullable=False)
+    created_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    questions = db.relationship('Question', back_populates='exam', cascade='all, delete-orphan', order_by='Question.id')
-    sessions = db.relationship('ExamSession', back_populates='exam', cascade='all, delete-orphan')
+    questions: Mapped[list['Question']] = relationship('Question', back_populates='exam', cascade='all, delete-orphan', order_by='Question.id')
+    sessions: Mapped[list['ExamSession']] = relationship('ExamSession', back_populates='exam', cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
@@ -48,19 +59,19 @@ class Exam(db.Model):
         }
 
 
-class Question(db.Model):
+class Question(Model):
     __tablename__ = 'questions'
 
-    id = db.Column(db.Integer, primary_key=True)
-    exam_id = db.Column(db.Integer, db.ForeignKey('exams.id', ondelete='CASCADE'), nullable=False)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    starter_code = db.Column(db.Text, default='')
-    language = db.Column(db.String(50), default='python', nullable=False)
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    exam_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('exams.id', ondelete='CASCADE'), nullable=False)
+    title: Mapped[str] = mapped_column(db.String(200), nullable=False)
+    description: Mapped[str] = mapped_column(db.Text, nullable=False)
+    starter_code: Mapped[Optional[str]] = mapped_column(db.Text, default='')
+    language: Mapped[str] = mapped_column(db.String(50), default='python', nullable=False)
 
     # Relationships
-    exam = db.relationship('Exam', back_populates='questions')
-    submissions = db.relationship('Submission', back_populates='question', cascade='all, delete-orphan')
+    exam: Mapped['Exam'] = relationship('Exam', back_populates='questions')
+    submissions: Mapped[list['Submission']] = relationship('Submission', back_populates='question', cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
@@ -73,24 +84,24 @@ class Question(db.Model):
         }
 
 
-class ExamSession(db.Model):
+class ExamSession(Model):
     __tablename__ = 'exam_sessions'
 
-    id = db.Column(db.Integer, primary_key=True)
-    exam_id = db.Column(db.Integer, db.ForeignKey('exams.id', ondelete='CASCADE'), nullable=False)
-    student_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
-    started_at = db.Column(db.DateTime, nullable=True)
-    ended_at = db.Column(db.DateTime, nullable=True)
-    status = db.Column(db.String(20), default='NOT_STARTED', nullable=False)  # NOT_STARTED, ACTIVE, COMPLETED
-    consent_given = db.Column(db.Boolean, default=False, nullable=False)
-    consent_timestamp = db.Column(db.DateTime, nullable=True)
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    exam_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('exams.id', ondelete='CASCADE'), nullable=False)
+    student_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
+    started_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime, nullable=True)
+    ended_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime, nullable=True)
+    status: Mapped[str] = mapped_column(db.String(20), default='NOT_STARTED', nullable=False)  # NOT_STARTED, ACTIVE, COMPLETED
+    consent_given: Mapped[bool] = mapped_column(db.Boolean, default=False, nullable=False)
+    consent_timestamp: Mapped[Optional[datetime]] = mapped_column(db.DateTime, nullable=True)
 
     # Relationships
-    exam = db.relationship('Exam', back_populates='sessions')
-    student = db.relationship('Student', back_populates='sessions')
-    submissions = db.relationship('Submission', back_populates='session', cascade='all, delete-orphan')
-    incidents = db.relationship('Incident', back_populates='session', cascade='all, delete-orphan', order_by='Incident.timestamp.desc()')
-    environment_checks = db.relationship('EnvironmentCheck', back_populates='session', cascade='all, delete-orphan', order_by='EnvironmentCheck.checked_at.desc()')
+    exam: Mapped['Exam'] = relationship('Exam', back_populates='sessions')
+    student: Mapped['Student'] = relationship('Student', back_populates='sessions')
+    submissions: Mapped[list['Submission']] = relationship('Submission', back_populates='session', cascade='all, delete-orphan')
+    incidents: Mapped[list['Incident']] = relationship('Incident', back_populates='session', cascade='all, delete-orphan', order_by='Incident.timestamp.desc()')
+    environment_checks: Mapped[list['EnvironmentCheck']] = relationship('EnvironmentCheck', back_populates='session', cascade='all, delete-orphan', order_by='EnvironmentCheck.checked_at.desc()')
 
     def to_dict(self):
         latest_check = self.environment_checks[0].to_dict() if self.environment_checks else None
@@ -113,21 +124,21 @@ class ExamSession(db.Model):
         }
 
 
-class Submission(db.Model):
+class Submission(Model):
     __tablename__ = 'submissions'
 
-    id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('exam_sessions.id', ondelete='CASCADE'), nullable=False)
-    question_id = db.Column(db.Integer, db.ForeignKey('questions.id', ondelete='CASCADE'), nullable=False)
-    code = db.Column(db.Text, nullable=False)
-    language = db.Column(db.String(50), default='python', nullable=False)
-    output = db.Column(db.Text, default='')
-    score = db.Column(db.Integer, default=100)
-    submitted_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    session_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('exam_sessions.id', ondelete='CASCADE'), nullable=False)
+    question_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('questions.id', ondelete='CASCADE'), nullable=False)
+    code: Mapped[str] = mapped_column(db.Text, nullable=False)
+    language: Mapped[str] = mapped_column(db.String(50), default='python', nullable=False)
+    output: Mapped[Optional[str]] = mapped_column(db.Text, default='')
+    score: Mapped[Optional[int]] = mapped_column(db.Integer, default=100)
+    submitted_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    session = db.relationship('ExamSession', back_populates='submissions')
-    question = db.relationship('Question', back_populates='submissions')
+    session: Mapped['ExamSession'] = relationship('ExamSession', back_populates='submissions')
+    question: Mapped['Question'] = relationship('Question', back_populates='submissions')
 
     def to_dict(self):
         return {
@@ -143,20 +154,20 @@ class Submission(db.Model):
         }
 
 
-class Incident(db.Model):
+class Incident(Model):
     __tablename__ = 'incidents'
 
-    id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('exam_sessions.id', ondelete='CASCADE'), nullable=False)
-    incident_type = db.Column(db.String(50), nullable=False)  # NO_FACE, MULTIPLE_FACES, etc.
-    severity = db.Column(db.String(20), default='LOW', nullable=False)  # LOW, MEDIUM, HIGH
-    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    source = db.Column(db.String(50), default='CV', nullable=False)
-    details = db.Column(db.Text, default='')
-    review_status = db.Column(db.String(20), default='PENDING', nullable=False)  # PENDING, REVIEWED, DISMISSED
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    session_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('exam_sessions.id', ondelete='CASCADE'), nullable=False)
+    incident_type: Mapped[str] = mapped_column(db.String(50), nullable=False)  # NO_FACE, MULTIPLE_FACES, etc.
+    severity: Mapped[str] = mapped_column(db.String(20), default='LOW', nullable=False)  # LOW, MEDIUM, HIGH
+    timestamp: Mapped[Optional[datetime]] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    source: Mapped[str] = mapped_column(db.String(50), default='CV', nullable=False)
+    details: Mapped[Optional[str]] = mapped_column(db.Text, default='')
+    review_status: Mapped[str] = mapped_column(db.String(20), default='PENDING', nullable=False)  # PENDING, REVIEWED, DISMISSED
 
     # Relationships
-    session = db.relationship('ExamSession', back_populates='incidents')
+    session: Mapped['ExamSession'] = relationship('ExamSession', back_populates='incidents')
 
     def to_dict(self):
         return {
@@ -171,22 +182,22 @@ class Incident(db.Model):
         }
 
 
-class EnvironmentCheck(db.Model):
+class EnvironmentCheck(Model):
     __tablename__ = 'environment_checks'
 
-    id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('exam_sessions.id', ondelete='CASCADE'), nullable=False)
-    status = db.Column(db.String(20), default='PASSED', nullable=False)  # PASSED, FLAGGED, FAILED
-    internet_status = db.Column(db.String(20), default='OK', nullable=False)
-    browser_detected = db.Column(db.String(100), default='')
-    webcam_status = db.Column(db.String(50), default='AVAILABLE')
-    microphone_status = db.Column(db.String(50), default='AVAILABLE')
-    prohibited_processes = db.Column(db.Text, default='')  # Comma-separated or JSON list
-    summary = db.Column(db.Text, default='')
-    checked_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    session_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('exam_sessions.id', ondelete='CASCADE'), nullable=False)
+    status: Mapped[str] = mapped_column(db.String(20), default='PASSED', nullable=False)  # PASSED, FLAGGED, FAILED
+    internet_status: Mapped[str] = mapped_column(db.String(20), default='OK', nullable=False)
+    browser_detected: Mapped[Optional[str]] = mapped_column(db.String(100), default='')
+    webcam_status: Mapped[Optional[str]] = mapped_column(db.String(50), default='AVAILABLE')
+    microphone_status: Mapped[Optional[str]] = mapped_column(db.String(50), default='AVAILABLE')
+    prohibited_processes: Mapped[Optional[str]] = mapped_column(db.Text, default='')  # Comma-separated or JSON list
+    summary: Mapped[Optional[str]] = mapped_column(db.Text, default='')
+    checked_at: Mapped[datetime] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
-    session = db.relationship('ExamSession', back_populates='environment_checks')
+    session: Mapped['ExamSession'] = relationship('ExamSession', back_populates='environment_checks')
 
     def to_dict(self):
         return {
@@ -203,24 +214,24 @@ class EnvironmentCheck(db.Model):
         }
 
 
-class AutomationRun(db.Model):
+class AutomationRun(Model):
     __tablename__ = 'automation_runs'
 
-    id = db.Column(db.Integer, primary_key=True)
-    workflow_name = db.Column(db.String(100), nullable=False)  # EnvironmentVerification, ExamLifecycle, etc.
-    mode = db.Column(db.String(50), default='DEFAULT', nullable=False)
-    status = db.Column(db.String(20), default='PENDING', nullable=False)  # PENDING, RUNNING, COMPLETED, FAILED
-    session_id = db.Column(db.Integer, db.ForeignKey('exam_sessions.id', ondelete='SET NULL'), nullable=True)
-    exam_id = db.Column(db.Integer, db.ForeignKey('exams.id', ondelete='SET NULL'), nullable=True)
-    started_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    completed_at = db.Column(db.DateTime, nullable=True)
-    error_message = db.Column(db.Text, default='')
-    log_output = db.Column(db.Text, default='')
-    report_path = db.Column(db.Text, default='')
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    workflow_name: Mapped[str] = mapped_column(db.String(100), nullable=False)  # EnvironmentVerification, ExamLifecycle, etc.
+    mode: Mapped[str] = mapped_column(db.String(50), default='DEFAULT', nullable=False)
+    status: Mapped[str] = mapped_column(db.String(20), default='PENDING', nullable=False)  # PENDING, RUNNING, COMPLETED, FAILED
+    session_id: Mapped[Optional[int]] = mapped_column(db.Integer, db.ForeignKey('exam_sessions.id', ondelete='SET NULL'), nullable=True)
+    exam_id: Mapped[Optional[int]] = mapped_column(db.Integer, db.ForeignKey('exams.id', ondelete='SET NULL'), nullable=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime, nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(db.Text, default='')
+    log_output: Mapped[Optional[str]] = mapped_column(db.Text, default='')
+    report_path: Mapped[Optional[str]] = mapped_column(db.Text, default='')
 
     # Relationships
-    session = db.relationship('ExamSession', foreign_keys=[session_id])
-    exam = db.relationship('Exam', foreign_keys=[exam_id])
+    session: Mapped[Optional['ExamSession']] = relationship('ExamSession', foreign_keys=[session_id])
+    exam: Mapped[Optional['Exam']] = relationship('Exam', foreign_keys=[exam_id])
 
     def to_dict(self):
         return {

@@ -449,7 +449,6 @@ def update_incident_status(incident_id):
     try:
         incident.review_status = status
         db.session.commit()
-        flash(f'Incident #{incident_id} marked as {status}.', 'success')
     except SQLAlchemyError as e:
         db.session.rollback()
         logger.error("Error updating incident #%s review status: %s", incident_id, e)
@@ -461,4 +460,5 @@ def update_incident_status(incident_id):
     if _wants_json():
         return jsonify({'success': True, 'incident': incident.to_dict()}), 200
 
+    flash(f'Incident #{incident_id} marked as {status}.', 'success')
     return redirect(url_for('faculty.session_detail', session_id=incident.session_id))

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from app.models import db, Student, Exam, ExamSession, Question, Submission
 
 student_bp = Blueprint('student', __name__)
@@ -55,8 +55,8 @@ def start_exam():
         flash('Invalid session initiation request.', 'danger')
         return redirect(url_for('student.select_student_exam'))
 
-    student = db.get_or_404(Student, student_id)
-    exam = db.get_or_404(Exam, exam_id)
+    db.get_or_404(Student, student_id)
+    db.get_or_404(Exam, exam_id)
 
     # Check if there is an existing ACTIVE session
     session = ExamSession.query.filter_by(
@@ -128,7 +128,6 @@ def completed_view(session_id):
 
 @student_bp.route('/student/execute', methods=['POST'])
 def execute_code_route():
-    from flask import jsonify
     from app.services.code_runner import execute_mock_code
     data = request.get_json() or {}
     code = data.get('code', '')
@@ -139,7 +138,6 @@ def execute_code_route():
 
 @student_bp.route('/student/submit', methods=['POST'])
 def submit_code_route():
-    from flask import jsonify
     from app.services.code_runner import execute_mock_code
     data = request.get_json() or {}
     session_id = data.get('session_id')
@@ -150,8 +148,8 @@ def submit_code_route():
     if not session_id or not question_id:
         return jsonify({'success': False, 'error': 'session_id and question_id are required'}), 400
 
-    session = db.get_or_404(ExamSession, session_id)
-    question = db.get_or_404(Question, question_id)
+    db.get_or_404(ExamSession, session_id)
+    db.get_or_404(Question, question_id)
 
     exec_result = execute_mock_code(code=code, language=language, question_id=question_id)
 
