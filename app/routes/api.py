@@ -1,8 +1,9 @@
 from datetime import datetime, timezone
 from functools import wraps
 import os
-from flask import Blueprint, request, jsonify, current_app, send_from_directory
+from flask import Blueprint, request, jsonify, current_app, send_from_directory, Response
 from app.models import db, Student, Exam, Question, ExamSession, Submission, Incident, EnvironmentCheck, AutomationRun
+from app.services.excel_report import build_exam_workbook
 from app.services.code_runner import execute_mock_code
 
 api_bp = Blueprint('api', __name__)
@@ -446,7 +447,7 @@ def submit_environment_check(session_id):
     db.session.add(check)
 
     # If flagged or failed, log an objective observation incident
-    if status in ['FLAGGED', 'FAILED']:
+    if status in ['FLAGGED', 'FAILED'] or prohibited_processes:
         if prohibited_processes:
             incident_type = 'PROHIBITED_PROCESS_DETECTED'
             severity = 'HIGH'
@@ -460,7 +461,8 @@ def submit_environment_check(session_id):
         existing_inc = Incident.query.filter_by(
             session_id=session_id,
             incident_type=incident_type,
-            source='UiPath'
+            source='UiPath',
+            details=details
         ).first()
         if not existing_inc:
             inc = Incident(
@@ -564,6 +566,18 @@ def get_exam_report_data(exam_id):
         'incidents': all_incidents,
         'environment_checks': all_env_checks
     }), 200
+
+
+@api_bp.route('/exams/<int:exam_id>/report.xlsx', methods=['GET'])
+@require_api_key
+def get_exam_report_xlsx(exam_id):
+    """Per-student scores + infractions as an Excel workbook (fetched and saved by GenerateExamReport.xaml)."""
+    exam = db.get_or_404(Exam, exam_id)
+    return Response(
+        build_exam_workbook(exam),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename=Exam_{exam_id}_Report.xlsx'}
+    )
 
 
 @api_bp.route('/students/import', methods=['POST'])

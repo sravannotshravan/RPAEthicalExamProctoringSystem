@@ -96,7 +96,7 @@ def monitoring_status():
         'success': True,
         'status': 'OPERATIONAL',
         'subsystems': {
-            'visual_cv': 'Active (Haar Cascades, Multi-Face, Gaze, Device Detection)',
+            'visual_cv': 'Active (YOLOv8 COCO: person count, phone/laptop/tv/book; Haar gaze; Haar fallback)',
             'acoustic_proctoring': 'Active (Web Audio API, RMS Energy, Voice Activity)'
         },
         'endpoints': {
@@ -411,18 +411,33 @@ def analyze_frame():
     incident_logged = False
     incident_id = None
 
-    # If an incident was detected and session_id is provided, log to DB
-    if analysis_result.get('status') == 'INCIDENT' and session_id:
-        incident_logged, incident_id = _log_incident(
-            session_id,
-            analysis_result.get('incident_type') or 'VISUAL_ANOMALY',
-            _normalize_severity(analysis_result.get('severity'), 'LOW'),
-            analysis_result.get('source') or 'CV',
-            analysis_result.get('details', '') or analysis_result.get('error', ''),
-            bypass_debounce
-        )
+    # A single frame can carry several infractions (e.g. 2 people + a phone): log each one.
+    violations = analysis_result.get('violations')
+    if not violations and analysis_result.get('status') == 'INCIDENT':
+        violations = [{
+            'incident_type': analysis_result.get('incident_type') or 'VISUAL_ANOMALY',
+            'severity': analysis_result.get('severity'),
+            'details': analysis_result.get('details', '') or analysis_result.get('error', ''),
+        }]
+    violations = violations or []
+
+    if violations and session_id:
+        for v in violations:
+            logged, inc_id = _log_incident(
+                session_id,
+                v.get('incident_type') or 'VISUAL_ANOMALY',
+                _normalize_severity(v.get('severity'), 'LOW'),
+                analysis_result.get('source') or 'CV',
+                v.get('details', ''),
+                bypass_debounce
+            )
+            incident_logged = incident_logged or logged
+            incident_id = incident_id or inc_id
 
     response_payload = {
+        'person_count': analysis_result.get('person_count', analysis_result.get('face_count', 0)),
+        'detected_objects': analysis_result.get('detected_objects', []),
+        'violations': violations,
         'success': bool(analysis_result.get('success', True)),
         'face_count': analysis_result.get('face_count', 0),
         'status': analysis_result.get('status', 'NORMAL'),

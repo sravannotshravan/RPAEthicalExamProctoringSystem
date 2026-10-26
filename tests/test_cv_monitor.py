@@ -180,3 +180,65 @@ def test_monitor_analyze_endpoint_simulations(client):
     assert res_alias_phone.get_json()['incident_type'] == 'PHONE_DETECTED'
     assert res_alias_phone.get_json()['severity'] == 'HIGH'
 
+
+
+def test_yolo_rules_multiple_infractions():
+    service = get_cv_monitor()
+
+    ok = service.evaluate_detections(1, [('person', 0.9), ('keyboard', 0.8), ('cup', 0.7)])
+    assert ok['status'] == 'NORMAL' and ok['violations'] == []
+
+    # Two people + phone + laptop + book -> every infraction type is reported
+    res = service.evaluate_detections(
+        2, [('person', 0.9), ('person', 0.8), ('cell phone', 0.7), ('laptop', 0.6), ('book', 0.5)])
+    types = {v['incident_type'] for v in res['violations']}
+    assert types == {'MULTIPLE_FACES', 'PHONE_DETECTED', 'PROHIBITED_DEVICE_DETECTED', 'PROHIBITED_MATERIAL_DETECTED'}
+    assert res['status'] == 'INCIDENT' and res['severity'] == 'HIGH'
+    assert set(res['detected_objects']) == {'cell phone', 'laptop', 'book'}
+
+    # Nobody in frame but a phone is visible
+    res = service.evaluate_detections(0, [('cell phone', 0.9)])
+    assert {v['incident_type'] for v in res['violations']} == {'NO_FACE', 'PHONE_DETECTED'}
+
+
+def test_monitor_logs_every_violation(client, monkeypatch):
+    service = get_cv_monitor()
+    monkeypatch.setattr(service, 'analyze_frame_base64', lambda _b64: service.evaluate_detections(
+        2, [('person', 0.9), ('person', 0.8), ('cell phone', 0.7)]))
+
+    stu = client.post('/api/students', json={'name': 'Ivy', 'email': 'ivy@test.edu', 'register_number': 'REG901'})
+    exam = client.post('/api/exams', json={'title': 'Multi', 'duration_minutes': 30})
+    sess = client.post('/api/sessions', json={'student_id': stu.get_json()['id'], 'exam_id': exam.get_json()['id']})
+    sid = sess.get_json()['id']
+    client.post(f'/api/sessions/{sid}/start')
+
+    res = client.post('/api/monitor/analyze', json={'session_id': sid, 'image': 'data:image/jpeg;base64,AAAA'})
+    data = res.get_json()
+    assert data['person_count'] == 2
+    assert {v['incident_type'] for v in data['violations']} == {'MULTIPLE_FACES', 'PHONE_DETECTED'}
+
+    logged = {i['incident_type'] for i in client.get(f'/api/sessions/{sid}/incidents').get_json()}
+    assert logged == {'MULTIPLE_FACES', 'PHONE_DETECTED'}
+
+
+def test_excel_report_has_scores_and_infractions(client):
+    from io import BytesIO
+    from openpyxl import load_workbook
+
+    stu = client.post('/api/students', json={'name': 'Jo', 'email': 'jo@test.edu', 'register_number': 'REG902'})
+    exam = client.post('/api/exams', json={'title': 'Excel', 'duration_minutes': 30})
+    exam_id = exam.get_json()['id']
+    sid = client.post('/api/sessions', json={'student_id': stu.get_json()['id'], 'exam_id': exam_id}).get_json()['id']
+    client.post(f'/api/sessions/{sid}/start')
+    client.post('/api/monitor/analyze', json={'session_id': sid, 'simulation': 'phone'})
+    client.post('/api/monitor/analyze', json={'session_id': sid, 'simulation': 'three_faces'})
+
+    res = client.get(f'/api/exams/{exam_id}/report.xlsx', headers={'X-API-Key': 'test-service-key'})
+    assert res.status_code == 200
+    wb = load_workbook(BytesIO(res.data))
+    assert wb.sheetnames == ['Student Summary', 'Infractions', 'Environment Checks']
+    row = [c.value for c in wb['Student Summary'][2]]
+    assert row[1] == 'REG902' and row[10] == 2  # TotalInfractions
+    assert wb['Infractions'].max_row == 3
+
+    assert client.get(f'/api/exams/{exam_id}/report.xlsx').status_code == 401

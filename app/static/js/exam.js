@@ -456,11 +456,16 @@ function updateProctoringUI(result) {
 
     // Update Device Status
     if (deviceStatus) {
-        if (result.incident_type === 'PHONE_DETECTED') {
-            deviceStatus.innerText = 'Mobile Phone Detected!';
-            deviceStatus.className = 'fw-bold text-danger';
-        } else if (result.incident_type === 'PROHIBITED_DEVICE_DETECTED') {
-            deviceStatus.innerText = 'Prohibited Device Detected!';
+        // A frame can carry several infractions at once; fall back to the primary one.
+        const types = (result.violations && result.violations.length)
+            ? result.violations.map(v => v.incident_type)
+            : [result.incident_type];
+        const labels = [];
+        if (types.includes('PHONE_DETECTED')) labels.push('Mobile Phone');
+        if (types.includes('PROHIBITED_DEVICE_DETECTED')) labels.push('Prohibited Device');
+        if (types.includes('PROHIBITED_MATERIAL_DETECTED')) labels.push('Prohibited Material');
+        if (labels.length) {
+            deviceStatus.innerText = labels.join(' + ') + ' Detected!';
             deviceStatus.className = 'fw-bold text-danger';
         } else {
             deviceStatus.innerText = 'None Detected';
@@ -485,7 +490,9 @@ function updateProctoringUI(result) {
             overlayStatus.className = isHigh ? 'camera-status-pill bg-danger text-white' : 'camera-status-pill bg-warning text-dark';
         }
         if (statusTextElem) {
-            statusTextElem.innerText = `${result.incident_type} (${result.severity || 'REVIEW'})`;
+            const extra = (result.violations && result.violations.length > 1)
+                ? ` +${result.violations.length - 1} more` : '';
+            statusTextElem.innerText = `${result.incident_type} (${result.severity || 'REVIEW'})${extra}`;
             statusTextElem.className = isHigh ? 'fw-bold text-danger' : 'fw-bold text-warning';
         }
     }
